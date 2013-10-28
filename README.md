@@ -20,12 +20,12 @@ async1(arg, new Callback1() {
 ```
 Into this:
 ```java
-async1(arg).then(new Promise.Chain<Result1, Result2, Exception, Error2>() {
+async1(arg).then(new Promise.Chain&lt;Result1, Result2, Exception, Error2&gt;() {
 	@Override
-	public Promise<Result2, Exception> chain(Result1 result1) {
+	public Promise&lt;Result2, Exception&gt; chain(Result1 result1) {
 		return async2(result2);
 	}
-}).listen(new Promise.Adapter<Result2, Exception>() {
+}).listen(new Promise.Adapter&lt;Result2, Exception&gt;() {
 	@Override
 	public void success(Result2 result) {
 		// Isn't this nicer?
@@ -57,12 +57,12 @@ async1(arg, new Callback1() {
 ```
 See how the error handling is all over the place? And you would have duplicate code if you error handling in both places was the same.
 ```java
-async1(arg).then(new Promise.Chain<Result1, Result2, Error, Error2>() {
+async1(arg).then(new Promise.Chain&lt;Result1, Result2, Error, Error2&gt;() {
 	@Override
-	public Promise<Result2, Exception> chain(Result1 result1) {
+	public Promise&lt;Result2, Exception&gt; chain(Result1 result1) {
 		return async2(result2);
 	}
-}).listen(new Promise.Adapter<Result2, Exception>() {
+}).listen(new Promise.Adapter&lt;Result2, Exception&gt;() {
 	@Override
 	public void success(Result2 result) {
 		// Isn't this nicer?
@@ -106,12 +106,12 @@ public void userCancel() {
 ```
 This code is starting to look like a mess! With promises it's so much easier:
 ```java
-Promise<Result2, Exception> promise = async1(arg).then(new Promise.Chain<Result1, Result2, Error, Error2>() {
+Promise&lt;Result2, Exception&gt; promise = async1(arg).then(new Promise.Chain&lt;Result1, Result2, Error, Error2&gt;() {
 	@Override
-	public Promise<Result2, Exception> chain(Result1 result1) {
+	public Promise&lt;Result2, Exception&gt; chain(Result1 result1) {
 		return async2(result2);
 	}
-}).listen(new Promise.Adapter<Result2, Exception>() {
+}).listen(new Promise.Adapter&lt;Result2, Exception&gt;() {
 	@Override
 	public void success(Result2 result) {
 		// Isn't this nicer?
@@ -135,8 +135,8 @@ public void asyncWithCallback(Arg arg, Callback callback) {
 	...
 }
 
-public Promise<Result, Error> asyncWithPromise(Arg arg) {
-	final Promise<Result, Error> promise = new Promise<Result, Error>();
+public Promise&lt;Result, Error&gt; asyncWithPromise(Arg arg) {
+	final Promise&lt;Result, Error&gt; promise = new Promise&lt;Result, Error&gt;();
 	asyncWithCallback(arg, new Callback() {
 		@Override
 		public void onResult(Result result) {
@@ -154,12 +154,12 @@ Cancelation
 ---------------
 If you have or want to create async methods that support cancelation, you need to use a `CancelToken`. This ensures the cancel propigates to all Promises.
 ```java
-public Proimse<Integer, Error> mySuperSlowMethod() {
+public Proimse&lt;Integer, Error&gt; mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
-	final Promise<Integer, Error> promise = new Promise<Integer, Error>(cancelToken);
+	final Promise&lt;Integer, Error&gt; promise = new Promise&lt;Integer, Error&gt;(cancelToken);
 	new Thread(new Runnable() {
 		int total = 0;
-		for (int i = 0; i < BAZZILION; i++) {
+		for (int i = 0; i &lt; BAZZILION; i++) {
 			if (cancelToken.isCanceled()) break;
 			total += i // Do some hard work
 		}
@@ -168,9 +168,9 @@ public Proimse<Integer, Error> mySuperSlowMethod() {
 	return promise;
 }
 
-public Promise<Result, Error> yourSuperSlowMethod() {
+public Promise&lt;Result, Error&gt; yourSuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
-	final Promise<Result, Error> promise = new Promise<Result, Error>(cancelToken);
+	final Promise&lt;Result, Error&gt; promise = new Promise&lt;Result, Error&gt;(cancelToken);
 	final Callback callback = new Callback() {
 		@Override
 		public void onResult(Result result) {
