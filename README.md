@@ -1,6 +1,6 @@
 ipromise
 ======
-Writing aysncrouns code can quickly become painful, espcially when you need to make multiple calls, due to each method taking it's own callback and having it's own idea of error handling and cancelation. Promises alivate this by providing a uniform interface and by turning callback style into the same return style of syncrouns code.
+Writing asynchronous code can quickly become painful, especially when you need to make multiple calls, due to each method taking it's own callback and having it's own idea of error handling and cancellation. Promises alleviate this by providing a uniform interface and by turning callback style into the same return style of synchronous code.
 Usage
 -------
 You can turn this:
@@ -32,7 +32,7 @@ async1(arg).then(new Promise.Chain<Result1, Result2, Exception, Error2>() {
 	}
 });
 ```
-See how it reads nice in sequentally instead of futher and further indentations? If that doesn't look like a huge improvement to you, what lets add some error checking. After all, `async1()` and `async2()` may fail.
+See how it reads nice in sequentially instead of further and further indentations? If that doesn't look like a huge improvement to you, what lets add some error checking. After all, `async1()` and `async2()` may fail.
 
 ```java
 async1(arg, new Callback1() {
@@ -126,7 +126,7 @@ public void userCancel() {
 	promise.cancel(); // That's it!
 }
 ```
-And if the library does support cancelation of methods, it can just listen for a cancelation on the promise.
+And if the library does support cancellation of methods, it can just listen for a cancellation on the promise.
 Implementing Promises
 -----------------------------
 So you have lots of code lying around that uses callbacks? Wrapping it up is super easy.
@@ -150,9 +150,9 @@ public Promise<Result, Error> asyncWithPromise(Arg arg) {
 	return promise;
 }
 ```
-Cancelation
+Cancellation
 ---------------
-If you have or want to create async methods that support cancelation, you need to use a `CancelToken`. This ensures the cancel propigates to all Promises.
+If you have or want to create async methods that support cancellation, you need to use a `CancelToken`. This ensures the cancel ropagates to all Promises.
 ```java
 public Proimse<Integer, Error> mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
