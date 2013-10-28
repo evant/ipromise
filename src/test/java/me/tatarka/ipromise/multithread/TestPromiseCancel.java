@@ -23,7 +23,7 @@ public class TestPromiseCancel extends MultithreadedTestCase {
     @Threaded
     public void thread1() {
         waitForTick(1);
-        promise.deliver("success");
+        promise.resolve("success");
     }
 
     @Threaded

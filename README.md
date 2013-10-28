@@ -140,11 +140,11 @@ public Promise<Result, Error> asyncWithPromise(Arg arg) {
 	asyncWithCallback(arg, new Callback() {
 		@Override
 		public void onResult(Result result) {
-			promise.deliver(result);
+			promise.resolve(result);
 		}
 		@Override
 		public void onError(Error error) {
-			promise.deliver(error);
+			promise.reject(error);
 		}
 	});
 	return promise;
@@ -163,7 +163,7 @@ public Proimse<Integer, Error> mySuperSlowMethod() {
 			if (cancelToken.isCanceled()) break;
 			total += i // Do some hard work
 		}
-		promise.deliver(total);
+		promise.resolve(total);
 	}).start();
 	return promise;
 }
@@ -174,7 +174,7 @@ public Promise<Result, Error> yourSuperSlowMethod() {
 	final Callback callback = new Callback() {
 		@Override
 		public void onResult(Result result) {
-			promise.deliver(result);
+			promise.resolve(result);
 		}
 	});
 	cancelToken.listen(new CancelToken.Listener() {

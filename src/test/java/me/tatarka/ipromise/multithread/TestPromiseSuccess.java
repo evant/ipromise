@@ -26,7 +26,7 @@ public class TestPromiseSuccess extends MultithreadedTestCase {
     @Threaded
     public void thread1() throws InterruptedException {
         Thread.sleep(10);
-        promise.deliver("success");
+        promise.resolve("success");
     }
 
     @Threaded

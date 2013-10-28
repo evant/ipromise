@@ -19,7 +19,7 @@ public class TestPromise {
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.listen(listener);
-        promise.deliver(result);
+        promise.resolve(result);
 
         verify(listener).result(Result.success(result));
     }
@@ -29,7 +29,7 @@ public class TestPromise {
         Promise<String, Exception> promise = new Promise<String, Exception>();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise.deliver(result);
+        promise.resolve(result);
         promise.listen(listener);
 
         verify(listener).result(Result.success(result));
@@ -41,7 +41,7 @@ public class TestPromise {
         Exception result = new Exception("error");
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.listen(listener);
-        promise.deliver(result);
+        promise.reject(result);
 
         verify(listener).result(Result.error(result));
     }
@@ -51,7 +51,7 @@ public class TestPromise {
         Promise<String, Exception> promise = new Promise<String, Exception>();
         Exception result = new Exception("error");
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise.deliver(result);
+        promise.reject(result);
         promise.listen(listener);
 
         verify(listener).result(Result.error(result));
@@ -88,7 +88,7 @@ public class TestPromise {
                 return result.length();
             }
         }).listen(listener);
-        promise.deliver(result);
+        promise.resolve(result);
 
         verify(listener).result(Result.success(result.length()));
     }
@@ -104,7 +104,7 @@ public class TestPromise {
                 return result.length();
             }
         }).listen(listener);
-        promise.deliver(result);
+        promise.reject(result);
 
         verify(listener).result(Result.error(result));
     }
@@ -118,11 +118,11 @@ public class TestPromise {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.deliver(result.length());
+                promise2.resolve(result.length());
                 return promise2;
             }
         }).listen(listener);
-        promise1.deliver(result);
+        promise1.resolve(result);
 
         verify(listener).result(Result.success(result.length()));
     }
@@ -136,11 +136,11 @@ public class TestPromise {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.deliver(result.length());
+                promise2.resolve(result.length());
                 return promise2;
             }
         }).listen(listener);
-        promise1.deliver(result);
+        promise1.reject(result);
 
         verify(listener).result(Result.error(result));
     }
@@ -153,7 +153,7 @@ public class TestPromise {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.deliver(result.length());
+                promise2.resolve(result.length());
                 return promise2;
             }
         }).listen(listener);
@@ -171,11 +171,11 @@ public class TestPromise {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.deliver(result.length());
+                promise2.resolve(result.length());
                 return promise2;
             }
         }).cancel();
-        promise1.listen(listener).deliver(result);
+        promise1.listen(listener).resolve(result);
 
         verify(listener).result(Result.cancel());
     }

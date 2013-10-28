@@ -69,10 +69,10 @@ public class Promise<T, E extends Exception> {
      * delivered. If the promise has already been canceled, the result will not be stored and
      * listeners will not be notified.
      *
-     * @param success the successful result to deliver.
+     * @param success the successful result to reject.
      * @throws Promise.AlreadyDeliveredException throws if a result has already been delivered.
      */
-    public synchronized void deliver(T success) {
+    public synchronized void resolve(T success) {
         if (delivered) {
             if (result.isCanceled()) return;
             else throw new AlreadyDeliveredException(this, success);
@@ -91,9 +91,9 @@ public class Promise<T, E extends Exception> {
      * delivered. If the promise has already been canceled, the result will not be stored and
      * listeners will not be notified.
      *
-     * @param error the error result to deliver.
+     * @param error the error result to reject.
      */
-    public synchronized void deliver(E error) {
+    public synchronized void reject(E error) {
         if (delivered) {
             if (result.isCanceled()) return;
             else throw new AlreadyDeliveredException(this, error);
@@ -111,15 +111,15 @@ public class Promise<T, E extends Exception> {
      * Delivers a result to all listeners of the {@code Promise}. This is a convenience method if
      * you already have a {@link Result} and want to pass it along to another promise.
      *
-     * @param result the result to deliver.
+     * @param result the result to reject.
      */
     public synchronized void deliver(Result<T, E> result) {
         try {
-            deliver(result.get());
+            resolve(result.get());
         } catch (Result.CanceledException e) {
             cancel();
         } catch (Exception e) {
-            deliver((E) e);
+            reject((E) e);
         }
     }
 
@@ -172,12 +172,12 @@ public class Promise<T, E extends Exception> {
         listen(new Adapter<T, E>() {
             @Override
             public void success(T result) {
-                newPromise.deliver(map.map(result));
+                newPromise.resolve(map.map(result));
             }
 
             @Override
             public void error(E error) {
-                newPromise.deliver(error);
+                newPromise.reject(error);
             }
 
             @Override
@@ -219,7 +219,7 @@ public class Promise<T, E extends Exception> {
 
             @Override
             public void error(E error) {
-                newPromise.deliver((ER) error);
+                newPromise.reject((ER) error);
             }
 
             @Override
