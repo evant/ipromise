@@ -32,7 +32,7 @@ async1(arg).then(new Promise.Chain<Result1, Result2, Exception, Error2>() {
 	}
 });
 ```
-See how it reads nice in sequentially instead of further and further indentations? If that doesn't look like a huge improvement to you, what lets add some error checking. After all, `async1()` and `async2()` may fail.
+See how it reads nice and sequentially instead of further and further indentations? If that doesn't look like a huge improvement to you, lets add some error checking. After all, `async1()` and `async2()` may fail.
 
 ```java
 async1(arg, new Callback1() {
@@ -55,11 +55,11 @@ async1(arg, new Callback1() {
 	}
 }
 ```
-See how the error handling is all over the place? And you would have duplicate code if you error handling in both places was the same.
+See how the error handling is all over the place? And you would have duplicate code if your error handling in both places was the same.
 ```java
 async1(arg).then(new Promise.Chain<Result1, Result2, Error, Error2>() {
 	@Override
-	public Promise<Result2, Exception> chain(Result1 result1) {
+	public Promise<Result2, Error> chain(Result1 result1) {
 		return async2(result2);
 	}
 }).listen(new Promise.Adapter<Result2, Exception>() {
@@ -106,7 +106,7 @@ public void userCancel() {
 ```
 This code is starting to look like a mess! With promises it's so much easier:
 ```java
-Promise<Result2, Exception> promise = async1(arg).then(new Promise.Chain<Result1, Result2, Error, Error2>() {
+Promise<Result2, Error> promise = async1(arg).then(new Promise.Chain<Result1, Result2, Error, Error2>() {
 	@Override
 	public Promise<Result2, Exception> chain(Result1 result1) {
 		return async2(result2);
@@ -152,7 +152,7 @@ public Promise<Result, Error> asyncWithPromise(Arg arg) {
 ```
 Cancellation
 ---------------
-If you have or want to create async methods that support cancellation, you need to use a `CancelToken`. This ensures the cancel ropagates to all Promises.
+If you have or want to create async methods that support cancellation, you need to use a `CancelToken`. This ensures the cancel propagates to all Promises.
 ```java
 public Proimse<Integer, Error> mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
