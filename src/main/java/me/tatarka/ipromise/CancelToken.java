@@ -23,7 +23,7 @@ public final class CancelToken {
 
         isCanceled = true;
         for (Listener listener : listeners) {
-            listener.onCancel();
+            listener.canceled();
         }
         listeners.clear();
     }
@@ -42,9 +42,9 @@ public final class CancelToken {
      *
      * @param listener the listener
      */
-    public synchronized void addListener(Listener listener) {
+    public synchronized void listen(Listener listener) {
         if (isCanceled) {
-            listener.onCancel();
+            listener.canceled();
         } else {
             listeners.add(listener);
         }
@@ -54,6 +54,6 @@ public final class CancelToken {
      * The listener to be notified when a token is canceled.
      */
     public interface Listener {
-        void onCancel();
+        void canceled();
     }
 }

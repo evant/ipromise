@@ -56,9 +56,9 @@ public class Promise<T, E extends Exception> {
      */
     public Promise(CancelToken cancelToken) {
         this.cancelToken = cancelToken;
-        cancelToken.addListener(new CancelToken.Listener() {
+        cancelToken.listen(new CancelToken.Listener() {
             @Override
-            public void onCancel() {
+            public void canceled() {
                 cancel();
             }
         });

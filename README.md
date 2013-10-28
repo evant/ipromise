@@ -177,9 +177,9 @@ public Promise<Result, Error> yourSuperSlowMethod() {
 			promise.deliver(result);
 		}
 	});
-	cancelToken.addListener(new CancelToken.Listener() {
+	cancelToken.listen(new CancelToken.Listener() {
 		@Override
-		public void onCancel() {
+		public void canceled() {
 			methodQueue.cancel(callback);
 		}
 	});
