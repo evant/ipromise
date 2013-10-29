@@ -4,7 +4,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -15,21 +14,23 @@ import static org.mockito.Mockito.verify;
 public class TestPromise {
     @Test
     public void testPromiseSuccessBefore() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.listen(listener);
-        promise.resolve(result);
+        deferred.resolve(result);
 
         verify(listener).result(Result.success(result));
     }
 
     @Test
     public void testPromiseSuccessAfter() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise.resolve(result);
+        deferred.resolve(result);
         promise.listen(listener);
 
         verify(listener).result(Result.success(result));
@@ -37,21 +38,23 @@ public class TestPromise {
 
     @Test
     public void testPromiseErrorBefore() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         Exception result = new Exception("error");
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.listen(listener);
-        promise.reject(result);
+        deferred.reject(result);
 
         verify(listener).result(Result.error(result));
     }
 
     @Test
     public void testPromiseErrorAfter() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         Exception result = new Exception("error");
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise.reject(result);
+        deferred.reject(result);
         promise.listen(listener);
 
         verify(listener).result(Result.error(result));
@@ -59,7 +62,8 @@ public class TestPromise {
 
     @Test
     public void testPromiseCancelBefore() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.listen(listener);
         promise.cancel();
@@ -69,7 +73,8 @@ public class TestPromise {
 
     @Test
     public void testPromiseCancelAfter() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.cancel();
         promise.listen(listener);
@@ -79,7 +84,8 @@ public class TestPromise {
 
     @Test
     public void testPromiseMapSuccess() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.then(new Promise.Map<String, Integer>() {
@@ -88,14 +94,15 @@ public class TestPromise {
                 return result.length();
             }
         }).listen(listener);
-        promise.resolve(result);
+        deferred.resolve(result);
 
         verify(listener).result(Result.success(result.length()));
     }
 
     @Test
     public void testPromiseMapError() {
-        Promise<String, Exception> promise = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+        Promise<String, Exception> promise = deferred.promise();
         Exception result = new Exception("error");
         Promise.Listener listener = mock(Promise.Listener.class);
         promise.then(new Promise.Map<String, Integer>() {
@@ -104,56 +111,62 @@ public class TestPromise {
                 return result.length();
             }
         }).listen(listener);
-        promise.reject(result);
+        deferred.reject(result);
 
         verify(listener).result(Result.error(result));
     }
 
     @Test
     public void testPromiseChainSuccess() {
-        Promise<String, Exception> promise1 = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred1 = new Deferred<String, Exception>();
+        Promise<String, Exception> promise1 = deferred1.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
         promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
-                Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.resolve(result.length());
+                Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();
+                Promise<Integer, Exception> promise2 = deferred2.promise();
+                deferred2.resolve(result.length());
                 return promise2;
             }
         }).listen(listener);
-        promise1.resolve(result);
+        deferred1.resolve(result);
 
         verify(listener).result(Result.success(result.length()));
     }
 
     @Test
     public void testPromiseChainError() {
-        Promise<String, Exception> promise1 = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred1 = new Deferred<String, Exception>();
+        Promise<String, Exception> promise1 = deferred1.promise();
         Exception result = new Exception("error");
         Promise.Listener listener = mock(Promise.Listener.class);
         promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
-                Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.resolve(result.length());
+                Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();
+                Promise<Integer, Exception> promise2 = deferred2.promise();
+                deferred2.resolve(result.length());
                 return promise2;
             }
         }).listen(listener);
-        promise1.reject(result);
+        deferred1.reject(result);
 
         verify(listener).result(Result.error(result));
     }
 
     @Test
     public void testPromiseCancelAbove() {
-        Promise<String, Exception> promise1 = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred1 = new Deferred<String, Exception>();
+        Promise<String, Exception> promise1 = deferred1.promise();
         Promise.Listener listener = mock(Promise.Listener.class);
         promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
-                Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.resolve(result.length());
+                Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();
+                Promise<Integer, Exception> promise2 = deferred2.promise();
+                deferred2.resolve(result.length());
                 return promise2;
             }
         }).listen(listener);
@@ -164,43 +177,22 @@ public class TestPromise {
 
     @Test
     public void testPromiseCancelBelow() {
-        Promise<String, Exception> promise1 = new Promise<String, Exception>();
+        Deferred<String, Exception> deferred1 = new Deferred<String, Exception>();
+        Promise<String, Exception> promise1 = deferred1.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
         promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
-                Promise<Integer, Exception> promise2 = new Promise<Integer, Exception>();
-                promise2.resolve(result.length());
+                Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();
+                Promise<Integer, Exception> promise2 = deferred2.promise();
+                deferred2.resolve(result.length());
                 return promise2;
             }
         }).cancel();
-        promise1.listen(listener).resolve(result);
+        promise1.listen(listener);
+        deferred1.resolve(result);
 
         verify(listener).result(Result.cancel());
-    }
-
-    @Test
-    public void testPromiseChainGenerics() {
-        Promise<String, TestException1> promise1 = new Promise<String, TestException1>();
-        promise1.then(new Promise.Chain<String, Integer, Exception, TestException2>() {
-            @Override
-            public Promise<Integer, TestException2> chain(String result) {
-                return new Promise<Integer, TestException2>();
-            }
-        }).listen(new Promise.Adapter<Integer, Exception>() {
-            @Override
-            public void result(Result<Integer, Exception> result) {
-                super.result(result);
-            }
-        });
-    }
-
-    private static class TestException1 extends Exception {
-
-    }
-
-    private static class TestException2 extends Exception {
-
     }
 }

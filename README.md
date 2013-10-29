@@ -136,18 +136,18 @@ public void asyncWithCallback(Arg arg, Callback callback) {
 }
 
 public Promise<Result, Error> asyncWithPromise(Arg arg) {
-	final Promise<Result, Error> promise = new Promise<Result, Error>();
+	final Deferred<Result, Error> deferred = new Deferred<Result, Error>();
 	asyncWithCallback(arg, new Callback() {
 		@Override
 		public void onResult(Result result) {
-			promise.resolve(result);
+			deferred.resolve(result);
 		}
 		@Override
 		public void onError(Error error) {
-			promise.reject(error);
+			deferred.reject(error);
 		}
 	});
-	return promise;
+	return deferred.promise();
 }
 ```
 Cancellation
@@ -156,25 +156,25 @@ If you have or want to create async methods that support cancellation, you need 
 ```java
 public Proimse<Integer, Error> mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
-	final Promise<Integer, Error> promise = new Promise<Integer, Error>(cancelToken);
+	final Deferred<Integer, Error> deferred = new Deferred<Integer, Error>(cancelToken);
 	new Thread(new Runnable() {
 		int total = 0;
 		for (int i = 0; i < BAZZILION; i++) {
 			if (cancelToken.isCanceled()) break;
 			total += i // Do some hard work
 		}
-		promise.resolve(total);
+		deferred.resolve(total);
 	}).start();
-	return promise;
+	return deferred.promise();
 }
 
 public Promise<Result, Error> yourSuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
-	final Promise<Result, Error> promise = new Promise<Result, Error>(cancelToken);
+	final Deferred<Result, Error> deferred = new Deferred<Result, Error>(cancelToken);
 	final Callback callback = new Callback() {
 		@Override
 		public void onResult(Result result) {
-			promise.resolve(result);
+			deferred.resolve(result);
 		}
 	});
 	cancelToken.listen(new CancelToken.Listener() {
@@ -185,6 +185,6 @@ public Promise<Result, Error> yourSuperSlowMethod() {
 	});
 	methodQueue.add(callback);
 	methodQueue.start();
-	return promise;
+	return deferred.promise();
 }
 ```

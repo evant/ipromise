@@ -1,5 +1,6 @@
 package me.tatarka.ipromise.multithread;
 
+import me.tatarka.ipromise.Deferred;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -20,13 +21,14 @@ import static org.mockito.Mockito.verify;
 public class TestPromiseSuccess extends MultithreadedTestCase {
     static int LISTEN_COUNT = 1000;
 
-    Promise<String, Exception> promise = new Promise<String, Exception>();
+    Deferred<String, Exception> deferred = new Deferred<String, Exception>();
+    Promise<String, Exception> promise = deferred.promise();
     Promise.Listener listener = mock(Promise.Listener.class);
 
     @Threaded
     public void thread1() throws InterruptedException {
         Thread.sleep(10);
-        promise.resolve("success");
+        deferred.resolve("success");
     }
 
     @Threaded
