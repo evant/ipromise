@@ -71,7 +71,7 @@ public class Promise<T, E extends Exception> {
     */
    synchronized void deliver(Result<T, E> result) {
       if (this.result != null) {
-         if (this.result.isCanceled()) return;
+         if (this.result.isCanceled() || result.isCanceled()) return;
          else throw new AlreadyDeliveredException(this, result);
       }
 
