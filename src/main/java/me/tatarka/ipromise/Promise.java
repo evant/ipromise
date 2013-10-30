@@ -74,6 +74,7 @@ public class Promise<T, E extends Exception> {
      * @param success the success result
      */
     public Promise(T success) {
+        cancelToken = new CancelToken();
         result = Result.success(success);
     }
 
@@ -84,6 +85,7 @@ public class Promise<T, E extends Exception> {
      * @param error the error result
      */
     public Promise(E error) {
+        cancelToken = new CancelToken();
         result = Result.error(error);
     }
 
@@ -94,6 +96,7 @@ public class Promise<T, E extends Exception> {
      * @param result the result
      */
     public Promise(Result<T, E> result) {
+        cancelToken = new CancelToken();
         this.result = result;
     }
 
