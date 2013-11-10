@@ -129,6 +129,30 @@ public class Promise<T, E extends Exception> {
     }
 
     /**
+     * Returns if the promise has finished and is holding a result.
+     *
+     * @return true if finished, false otherwise
+     */
+    public synchronized boolean isFinished() {
+        return result != null;
+    }
+
+    /**
+     * Returns the result if the promise has finished. Use {@link Promise#isFinished()} to ensure
+     * the result has been delivered.
+     *
+     * @return the result if the promise has finished
+     * @throws NotFinishedException if the promise has not delivered the result yet.
+     */
+    public synchronized Result<T, E> getResult() throws NotFinishedException {
+        if (result != null) {
+            return result;
+        } else {
+            throw new NotFinishedException(this, "cannot get result");
+        }
+    }
+
+    /**
      * Listens to a {@code Promise}, getting a result when the {@code Promise} completes. If the
      * {@code Promise} has already completed, the listener is immediately called. This way you can't
      * "miss" the result.
@@ -293,6 +317,12 @@ public class Promise<T, E extends Exception> {
     public static class AlreadyDeliveredException extends IllegalStateException {
         public AlreadyDeliveredException(Promise promise, Object result) {
             super(result + " cannot be delivered because " + promise.result + " has already been delivered.");
+        }
+    }
+
+    public static class NotFinishedException extends IllegalStateException {
+        public NotFinishedException(Promise promise, String message) {
+            super(message + " because promise has not finished");
         }
     }
 }
