@@ -59,7 +59,7 @@ See how the error handling is all over the place? And you would have duplicate c
 ```java
 async1(arg).then(new Result.Chain<MyResult1, MyResult2, Error>() {
 	@Override
-	public Promise<MyResult2, Error> success(MyResult1 result1) {
+	public Promise<Result<MyResult2, Error>> success(MyResult1 result1) {
 		return async2(result1);
 	}
 }).listen(new Result.Listener<MyResult2, Error>() {
@@ -108,7 +108,7 @@ This code is starting to look like a mess! With promises it's so much easier:
 ```java
 Promise<Result<Result2, Error>> promise = async1(arg).then(new Result.Chain<Result1, Result2, Error>() {
 	@Override
-	public Promise<Result2, Error> success(Result1 result1) {
+	public Promise<Result<Result2, Error>> success(Result1 result1) {
 		return async2(result1);
 	}
 }).listen(new Result.Listener<Result2, Error>() {
