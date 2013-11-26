@@ -19,14 +19,6 @@ public final class Result<T, E extends Exception> {
      */
     public static final int SUCCESS = 1;
 
-    /**
-     * A canceled result.
-     */
-    public static final int CANCELED = 2;
-
-    // Because this class is immutable and a canceled result has no data, a singleton instance can be used for all canceled results.
-    private static final Result CANCEL_RESULT = new Result();
-
     private final int state;
     private final T success;
     private final E error;
@@ -68,38 +60,17 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * Constructs a new cancel result.
-     *
-     * @param <T> the type of the result's value
-     * @param <E> teh type of the result's error value
-     * @return the new result
-     */
-    public static <T, E extends Exception> Result<T, E> cancel() {
-        return CANCEL_RESULT;
-    }
-
-    private Result() {
-        state = CANCELED;
-        success = null;
-        error = null;
-    }
-
-    /**
      * Retrieves the value from the result in a safe way. If the result is successful, returns the
-     * result's value. If the result is an error, it throws the result's Exception. If the result if
-     * canceled, it throws a {@link Result.CanceledException}.
+     * result's value. If the result is an error, it throws the result's Exception.
      *
      * @return the value of the result if successful
-     * @throws E                 thrown on an error result
-     * @throws CanceledException thrown on a cancel result
+     * @throws E thrown on an error result
      */
-    public T get() throws E, CanceledException {
+    public T get() throws E {
         if (isSuccess()) {
             return success;
-        } else if (isError()) {
-            throw error;
         } else {
-            throw new CanceledException(this);
+            throw error;
         }
     }
 
@@ -112,6 +83,22 @@ public final class Result<T, E extends Exception> {
         return state == SUCCESS;
     }
 
+    public T getSuccess() {
+        if (isSuccess()) {
+            return success;
+        } else {
+            throw new IllegalStateException("Result was not successful");
+        }
+    }
+
+    public E getError() {
+        if (isError()) {
+            return error;
+        } else {
+            throw new IllegalStateException("Result was not an error");
+        }
+    }
+
     /**
      * Returns if the result is an error
      *
@@ -121,24 +108,6 @@ public final class Result<T, E extends Exception> {
         return state == ERROR;
     }
 
-    /**
-     * Returns if the result is canceled
-     *
-     * @return true if canceled, false otherwise
-     */
-    public boolean isCanceled() {
-        return state == CANCELED;
-    }
-
-    /**
-     * The exception thrown when a result is canceled.
-     */
-    public static class CanceledException extends Exception {
-        public CanceledException(Result result) {
-            super(result + " was canceled");
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == null || !o.getClass().equals(getClass())) return false;
@@ -146,10 +115,8 @@ public final class Result<T, E extends Exception> {
 
         if (state == SUCCESS) {
             return other.state == SUCCESS && Objects.equals(success, other.success);
-        } else if (state == ERROR) {
-            return other.state == ERROR && Objects.equals(error, other.error);
         } else {
-            return other.state == CANCELED;
+            return other.state == ERROR && Objects.equals(error, other.error);
         }
     }
 
@@ -157,10 +124,8 @@ public final class Result<T, E extends Exception> {
     public int hashCode() {
         if (state == SUCCESS) {
             return Objects.hashCode(success);
-        } else if (state == ERROR) {
-            return Objects.hashCode(error);
         } else {
-            return 0;
+            return Objects.hashCode(error);
         }
     }
 
@@ -168,10 +133,56 @@ public final class Result<T, E extends Exception> {
     public String toString() {
         if (state == SUCCESS) {
             return "Result<Success>(" + success + ")";
-        } else if (state == ERROR) {
-            return "Result<Error>(" + error + ")";
         } else {
-            return "Result<Cancel>";
+            return "Result<Error>(" + error + ")";
+        }
+    }
+
+    public static abstract class Listener<T, E extends Exception> implements Promise.Listener<Result<T, E>> {
+        @Override
+        public final void result(Result<T, E> result) {
+            if (result.isSuccess()) {
+                success(result.getSuccess());
+            } else {
+                error(result.getError());
+            }
+        }
+
+        protected void success(T success) {}
+        protected void error(E error) {}
+    }
+
+    public static abstract class Map<T1, T2, E extends Exception> implements Promise.Map<Result<T1, E>, Result<T2, E>> {
+        @Override
+        public final Result<T2, E> map(Result<T1, E> result) {
+            if (result.isSuccess()) {
+                return Result.success(success(result.getSuccess()));
+            } else {
+                return Result.error(error(result.getError()));
+            }
+        }
+
+        protected abstract T2 success(T1 success);
+
+        protected E error(E error) {
+            return error;
+        }
+    }
+
+    public static abstract class Chain<T1, T2, E extends Exception> implements Promise.Chain<Result<T1, E>, Result<T2, E>> {
+        @Override
+        public final Promise<Result<T2, E>> chain(Result<T1, E> result) {
+            if (result.isSuccess()) {
+                return success(result.getSuccess());
+            } else {
+                return error(result.getError());
+            }
+        }
+
+        protected abstract Promise<Result<T2, E>> success(T1 success);
+
+        protected Promise<Result<T2, E>>  error(E error) {
+            return new Promise<Result<T2, E>>(Result.<T2, E>error(error));
         }
     }
 }

@@ -8,10 +8,10 @@ You can turn this:
 ```java
 async1(arg, new Callback1() {
 	@Override
-	public void onResult(Result1 result1) {
+	public void onResult(MyResult1 result1) {
 		async2(result1, new Callback2() {
 			@Override
-			public void onResult(Result2 result2) {
+			public void onResult(MyResult2 result2) {
 				// Finnaly! do something with result2.
 			}
 		}
@@ -20,14 +20,14 @@ async1(arg, new Callback1() {
 ```
 Into this:
 ```java
-async1(arg).then(new Promise.Chain<Result1, Result2, Error>() {
+async1(arg).then(new Promise.Chain<MyResult1, MyResult2>() {
 	@Override
-	public Promise<Result2, Error> chain(Result1 result1) {
+	public Promise<MyResult2> chain(MyResult1 result1) {
 		return async2(result2);
 	}
-}).listen(new Promise.Adapter<Result2, Error>() {
+}).listen(new Promise.Listener<MyResult2>() {
 	@Override
-	public void success(Result2 result) {
+	public void result(MyResult2 result) {
 		// Isn't this nicer?
 	}
 });
@@ -37,11 +37,11 @@ See how it reads nice and sequentially instead of further and further indentatio
 ```java
 async1(arg, new Callback1() {
 	@Override
-	public void onResult(Result1 result1) {
+	public void onResult(MyResult1 result1) {
 		async2(result1, new Callback2() {
 			@Override
-			public void onResult(Result2 result2) {
-				// Finnaly! do something with result2.
+			public void onResult(MyResult2 result2) {
+				// Finally! do something with result2.
 			}
 			@Override
 			public void onError(Error error) {
@@ -57,14 +57,14 @@ async1(arg, new Callback1() {
 ```
 See how the error handling is all over the place? And you would have duplicate code if your error handling in both places was the same.
 ```java
-async1(arg).then(new Promise.Chain<Result1, Result2, Error>() {
+async1(arg).then(new Result.Chain<MyResult1, MyResult2, Error>() {
 	@Override
-	public Promise<Result2, Error> chain(Result1 result1) {
-		return async2(result2);
+	public Promise<MyResult2, Error> success(MyResult1 result1) {
+		return async2(result1);
 	}
-}).listen(new Promise.Adapter<Result2, Error>() {
+}).listen(new Result.Listener<MyResult2, Error>() {
 	@Override
-	public void success(Result2 result) {
+	public void success(MyResult2 result) {
 		// Isn't this nicer?
 	}
 	@Override
@@ -75,18 +75,18 @@ async1(arg).then(new Promise.Chain<Result1, Result2, Error>() {
 ```
 Much nicer! Now lets say the user decides they don't want to wait anymore and cancels the action.
 ```java
-// The libary I'm using doesn't have a way to cancel method calls :(
+// The library I'm using doesn't have a way to cancel method calls :(
 boolean isCanceled = false;
 
 async1(arg, new Callback1() {
 	@Override
-	public void onResult(Result1 result1) {
+	public void onResult(MyResult1 result1) {
 		if (isCanceled) return; // Easy to forget one of these
 		async2(result1, new Callback2() {
 			@Override
-			public void onResult(Result2 result2) {
+			public void onResult(MyResult2 result2) {
 				if (isCanceled) return;
-				// Finnaly! do something with result2.
+				// Finally! do something with result2.
 			}
 			@Override
 			public void onError(Error error) {
@@ -106,12 +106,12 @@ public void userCancel() {
 ```
 This code is starting to look like a mess! With promises it's so much easier:
 ```java
-Promise<Result2, Error> promise = async1(arg).then(new Promise.Chain<Result1, Result2, Error>() {
+Promise<Result<Result2, Error>> promise = async1(arg).then(new Result.Chain<Result1, Result2, Error>() {
 	@Override
-	public Promise<Result2, Error> chain(Result1 result1) {
-		return async2(result2);
+	public Promise<Result2, Error> success(Result1 result1) {
+		return async2(result1);
 	}
-}).listen(new Promise.Adapter<Result2, Error>() {
+}).listen(new Result.Listener<Result2, Error>() {
 	@Override
 	public void success(Result2 result) {
 		// Isn't this nicer?
@@ -135,16 +135,16 @@ public void asyncWithCallback(Arg arg, Callback callback) {
 	...
 }
 
-public Promise<Result, Error> asyncWithPromise(Arg arg) {
-	final Deferred<Result, Error> deferred = new Deferred<Result, Error>();
+public Promise<Result<MyResult, Error>> asyncWithPromise(Arg arg) {
+	final Deferred<Result<MyResult, Error>> deferred = new Deferred<Result<MyResult, Error>>();
 	asyncWithCallback(arg, new Callback() {
 		@Override
-		public void onResult(Result result) {
-			deferred.resolve(result);
+		public void onResult(MyResult result) {
+			deferred.resolve(Result.<MyResult, Error>success(result));
 		}
 		@Override
 		public void onError(Error error) {
-			deferred.reject(error);
+			deferred.resolve(Result.<MyResult, Error>error(error));
 		}
 	});
 	return deferred.promise();
@@ -154,9 +154,9 @@ Cancellation
 ---------------
 If you have or want to create async methods that support cancellation, you need to use a `CancelToken`. This ensures the cancel propagates to all Promises.
 ```java
-public Proimse<Integer, Error> mySuperSlowMethod() {
+public Promise<Integer> mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
-	final Deferred<Integer, Error> deferred = new Deferred<Integer, Error>(cancelToken);
+	final Deferred<Integer> deferred = new Deferred<Integer>(cancelToken);
 	new Thread(new Runnable() {
 		int total = 0;
 		for (int i = 0; i < BAZZILION; i++) {
@@ -168,12 +168,12 @@ public Proimse<Integer, Error> mySuperSlowMethod() {
 	return deferred.promise();
 }
 
-public Promise<Result, Error> yourSuperSlowMethod() {
+public Promise<MyResult> yourSuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
-	final Deferred<Result, Error> deferred = new Deferred<Result, Error>(cancelToken);
+	final Deferred<MyResult> deferred = new Deferred<MyResult>(cancelToken);
 	final Callback callback = new Callback() {
 		@Override
-		public void onResult(Result result) {
+		public void onResult(MyResult result) {
 			deferred.resolve(result);
 		}
 	});

@@ -1,5 +1,6 @@
 package me.tatarka.ipromise;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +49,27 @@ public final class CancelToken {
         } else {
             listeners.add(listener);
         }
+    }
+
+    public static void join(CancelToken token1, CancelToken token2) {
+        final WeakReference<CancelToken> weakToken1 = new WeakReference<CancelToken>(token1);
+        final WeakReference<CancelToken> weakToken2 = new WeakReference<CancelToken>(token2);
+
+        token1.listen(new Listener() {
+            @Override
+            public void canceled() {
+                CancelToken token2 = weakToken2.get();
+                if (token2 != null) token2.cancel();
+            }
+        });
+
+        token2.listen(new Listener() {
+            @Override
+            public void canceled() {
+                CancelToken token1 = weakToken1.get();
+                if (token1 != null) token1.cancel();
+            }
+        });
     }
 
     /**

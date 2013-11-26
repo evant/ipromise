@@ -21,8 +21,8 @@ import static org.mockito.Mockito.verify;
 public class TestPromiseSuccess extends MultithreadedTestCase {
     static int LISTEN_COUNT = 1000;
 
-    Deferred<String, Exception> deferred = new Deferred<String, Exception>();
-    Promise<String, Exception> promise = deferred.promise();
+    Deferred<String> deferred = new Deferred<String>();
+    Promise<String> promise = deferred.promise();
     Promise.Listener listener = mock(Promise.Listener.class);
 
     @Threaded
@@ -40,6 +40,6 @@ public class TestPromiseSuccess extends MultithreadedTestCase {
 
     @Test
     public void test() {
-        verify(listener, times(LISTEN_COUNT)).result(Result.success("success"));
+        verify(listener, times(LISTEN_COUNT)).result("success");
     }
 }

@@ -29,12 +29,6 @@ public class TestResult {
     }
 
     @Test
-    public void testCancel() {
-        Result result = Result.cancel();
-        assertThat(result.isCanceled());
-    }
-
-    @Test
     public void testGetSuccess() throws Exception {
         Result result = Result.success("success");
         assertThat(result.get()).isEqualTo("success");
@@ -45,13 +39,6 @@ public class TestResult {
         Result result = Result.error(new Exception("error"));
         result.get();
         fail("Result should have thrown exception");
-    }
-
-    @Test(expected = Result.CanceledException.class)
-    public void testCancelError() throws Exception {
-        Result result = Result.cancel();
-        result.get();
-        fail("Result should have thrown cancel exception");
     }
 
     @Test

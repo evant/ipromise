@@ -39,10 +39,11 @@ import java.util.List;
  * @author Evan Tatarka
  * @see Deferred
  */
-public class Promise<T, E extends Exception> {
+public class Promise<T> {
     private CancelToken cancelToken;
-    private List<Listener<T, E>> listeners = new ArrayList<Listener<T, E>>();
-    private Result<T, E> result;
+    private List<Listener<T>> listeners = new ArrayList<Listener<T>>();
+    private T result;
+    private boolean isFinished;
 
     /**
      * Constructs a new promise. This is used internally by {@link Deferred}.
@@ -68,36 +69,15 @@ public class Promise<T, E extends Exception> {
     }
 
     /**
-     * Constructs a promise with a success result already in it. This is useful for when you can
-     * return the value immediately.
-     *
-     * @param success the success result
-     */
-    public Promise(T success) {
-        cancelToken = new CancelToken();
-        result = Result.success(success);
-    }
-
-    /**
-     * Constructs a promise with an error result already in it. This is useful for when you can
-     * return the value immediately.
-     *
-     * @param error the error result
-     */
-    public Promise(E error) {
-        cancelToken = new CancelToken();
-        result = Result.error(error);
-    }
-
-    /**
      * Constructs a promise with a result already in it. This is useful for when you can return the
      * value immediately.
      *
      * @param result the result
      */
-    public Promise(Result<T, E> result) {
+    public Promise(T result) {
         cancelToken = new CancelToken();
         this.result = result;
+        isFinished = true;
     }
 
     /**
@@ -106,18 +86,16 @@ public class Promise<T, E extends Exception> {
      *
      * @param result the result to reject.
      */
-    synchronized void deliver(Result<T, E> result) {
-        if (this.result != null) {
-            if (this.result.isCanceled() || result.isCanceled()) return;
-            else throw new AlreadyDeliveredException(this, result);
-        }
+    synchronized void deliver(T result) {
+        if (isFinished) throw new AlreadyDeliveredException(this, result);
+        if (cancelToken.isCanceled()) return;
 
         this.result = result;
-        for (Promise.Listener<T, E> listener : listeners) {
+        isFinished = true;
+        for (Promise.Listener<T> listener : listeners) {
             listener.result(result);
         }
         listeners.clear();
-        if (result.isCanceled()) cancelToken.cancel();
     }
 
     /**
@@ -125,7 +103,7 @@ public class Promise<T, E extends Exception> {
      * Promises that share the {@link CancelToken}.
      */
     public synchronized void cancel() {
-        deliver(Result.<T, E>cancel());
+        if (!isFinished) cancelToken.cancel();
     }
 
     /**
@@ -134,18 +112,22 @@ public class Promise<T, E extends Exception> {
      * @return true if finished, false otherwise
      */
     public synchronized boolean isFinished() {
-        return result != null;
+        return isFinished;
+    }
+
+    public synchronized boolean isCanceled() {
+        return cancelToken.isCanceled();
     }
 
     /**
      * Returns the result if the promise has finished. Use {@link Promise#isFinished()} to ensure
-     * the result has been delivered.
+     * the result has been isFinished.
      *
      * @return the result if the promise has finished
-     * @throws NotFinishedException if the promise has not delivered the result yet.
+     * @throws NotFinishedException if the promise has not isFinished the result yet.
      */
-    public synchronized Result<T, E> getResult() throws NotFinishedException {
-        if (result != null) {
+    public synchronized T getResult() throws NotFinishedException {
+        if (isFinished) {
             return result;
         } else {
             throw new NotFinishedException(this, "cannot get result");
@@ -160,8 +142,8 @@ public class Promise<T, E extends Exception> {
      * @param listener the listener to call when the promise completes
      * @return the promise for chaining
      */
-    public synchronized Promise<T, E> listen(Listener<T, E> listener) {
-        if (result != null) {
+    public synchronized Promise<T> listen(Listener<T> listener) {
+        if (isFinished) {
             listener.result(result);
         } else {
             listeners.add(listener);
@@ -181,22 +163,12 @@ public class Promise<T, E extends Exception> {
      * @param <T2> the success result type of the new {@code Promise}
      * @return the new {@code Promise}
      */
-    public <T2> Promise<T2, E> then(final Map<T, T2> map) {
-        final Promise<T2, E> newPromise = new Promise<T2, E>(cancelToken);
-        listen(new Adapter<T, E>() {
+    public <T2> Promise<T2> then(final Map<T, T2> map) {
+        final Promise<T2> newPromise = new Promise<T2>(cancelToken);
+        listen(new Listener<T>() {
             @Override
-            public void success(T result) {
-                newPromise.deliver(Result.<T2, E>success(map.map(result)));
-            }
-
-            @Override
-            public void error(E error) {
-                newPromise.deliver(Result.<T2, E>error(error));
-            }
-
-            @Override
-            public void canceled() {
-                newPromise.cancel();
+            public void result(T result) {
+                newPromise.deliver(map.map(result));
             }
         });
         return newPromise;
@@ -211,28 +183,19 @@ public class Promise<T, E extends Exception> {
      * @param <T2>  the type of the second {@code Promise} success result
      * @return the new {@code Promise}
      */
-    public <T2> Promise<T2, E> then(final Chain<T, T2, E> chain) {
-        final Promise<T2, E> newPromise = new Promise<T2, E>(cancelToken);
-        listen(new Adapter<T, E>() {
+    public <T2> Promise<T2> then(final Chain<T, T2> chain) {
+        final Promise<T2> newPromise = new Promise<T2>(cancelToken);
+        listen(new Listener<T>() {
             @Override
-            public void success(T result) {
-                chain.chain(result).listen(new Listener<T2, E>() {
+            public void result(T result) {
+                final Promise<T2> chainedPromise = chain.chain(result);
+                CancelToken.join(cancelToken, chainedPromise.cancelToken);
+                chainedPromise.listen(new Listener<T2>() {
                     @Override
-                    public void result(Result<T2, E> result) {
+                    public void result(T2 result) {
                         newPromise.deliver(result);
                     }
                 });
-            }
-
-            @Override
-            public void error(E error) {
-                // ER must be a superclass of E
-                newPromise.deliver(Result.<T2, E>error(error));
-            }
-
-            @Override
-            public void canceled() {
-                newPromise.cancel();
             }
         });
         return newPromise;
@@ -244,52 +207,20 @@ public class Promise<T, E extends Exception> {
      * because you can't directly deliver results to the cast promise.
      *
      * @param <T2> the type of the success value to cast to.
-     * @param <E2> the type of the error type to cast to.
      * @return a cast of the promise.
      */
-    public <T2, E2 extends Exception> Promise<T2, E2> cast() {
-        return (Promise<T2, E2>) this;
+    public <T2> Promise<T2> cast() {
+        return (Promise<T2>) this;
     }
 
     /**
      * T1 listener for receiving the result of a promise.
      *
      * @param <T> the success result type
-     * @param <E> the error result type
      * @see Promise#listen(Promise.Listener)
      */
-    public interface Listener<T, E extends Exception> {
-        public void result(Result<T, E> result);
-    }
-
-    /**
-     * This adapter is useful for when you only care about some of the possible result states or you
-     * want to split out the possible result states in separate methods. If you override {@link
-     * Adapter#result(Result)}, you must call {@code super} for the adapter to work correctly.
-     *
-     * @param <T> the success result type
-     * @param <E> the error result type
-     */
-    public static abstract class Adapter<T, E extends Exception> implements Listener<T, E> {
-        @Override
-        public void result(Result<T, E> result) {
-            try {
-                success(result.get());
-            } catch (Result.CanceledException e) {
-                canceled();
-            } catch (Exception e) {
-                error((E) e);
-            }
-        }
-
-        public void success(T result) {
-        }
-
-        public void error(E error) {
-        }
-
-        public void canceled() {
-        }
+    public interface Listener<T> {
+        public void result(T result);
     }
 
     /**
@@ -306,22 +237,21 @@ public class Promise<T, E extends Exception> {
     /**
      * Chains the result of one {@code Promise} to second {@code Promise}.
      *
-     * @param <T1> the type of the original {@code Promise} success result
-     * @param <T2> the type of the second {@code Promise} success result
-     * @param <E>  the type of the second {@code Promise} error result
+     * @param <T1> the type of the original {@code Promise} result
+     * @param <T2> the type of the second {@code Promise} result
      * @see Promise#then(Promise.Chain)
      */
-    public interface Chain<T1, T2, E extends Exception> {
-        public Promise<T2, E> chain(T1 result);
+    public interface Chain<T1, T2> {
+        public Promise<T2> chain(T1 result);
     }
 
     /**
-     * The Exception thrown if a result has already been delivered and a second result is attempted
-     * to be delivered.
+     * The Exception thrown if a result has already been isFinished and a second result is attempted
+     * to be isFinished.
      */
     public static class AlreadyDeliveredException extends IllegalStateException {
         public AlreadyDeliveredException(Promise promise, Object result) {
-            super(result + " cannot be delivered because " + promise.result + " has already been delivered.");
+            super(result + " cannot be isFinished because " + promise.result + " has already been isFinished.");
         }
     }
 

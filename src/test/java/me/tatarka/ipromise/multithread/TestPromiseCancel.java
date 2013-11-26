@@ -10,7 +10,9 @@ import edu.umd.cs.mtc.Threaded;
 import me.tatarka.ipromise.Promise;
 import me.tatarka.ipromise.Result;
 
+import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -18,8 +20,8 @@ import static org.mockito.Mockito.verify;
  */
 @RunWith(MultiThreadedRunner.class)
 public class TestPromiseCancel extends MultithreadedTestCase {
-    Deferred<String, Exception> deferred = new Deferred<String, Exception>();
-    Promise<String, Exception> promise = deferred.promise();
+    Deferred<String> deferred = new Deferred<String>();
+    Promise<String> promise = deferred.promise();
     Promise.Listener listener = mock(Promise.Listener.class);
 
     @Threaded
@@ -37,6 +39,7 @@ public class TestPromiseCancel extends MultithreadedTestCase {
 
     @Test
     public void test() {
-        verify(listener).result(Result.cancel());
+        verify(listener, never()).result("success");
+        assertThat(promise.isCanceled()).isTrue();
     }
 }
