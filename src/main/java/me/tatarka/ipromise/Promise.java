@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A promise is a way to return a result the will be fulfilled sometime in the future. This fixes
+ * T1 promise is a way to return a result the will be fulfilled sometime in the future. This fixes
  * the inversion of control that callback-style functions creates and restores the composeability of
  * return values.
  * <p/>
- * A example of an asynchronous method is as follows:
+ * T1 example of an asynchronous method is as follows:
  * <pre>{@code
  *  async(arg, new Callback {
  *      @literal@Override
@@ -176,21 +176,22 @@ public class Promise<T, E extends Exception> {
      * Promise} without invoking the {@link Promise.Map} function. This way you can do some work on
      * an asynchronous result and pass it along without worrying about error or cancel states.
      *
-     * @param map the function to map the result of the original {@code Promise} to the new promise
-     * @param <B> the success result type of the new {@code Promise}
+     * @param map  the function to map the result of the original {@code Promise} to the new
+     *             promise
+     * @param <T2> the success result type of the new {@code Promise}
      * @return the new {@code Promise}
      */
-    public <B> Promise<B, E> then(final Map<T, B> map) {
-        final Promise<B, E> newPromise = new Promise<B, E>(cancelToken);
+    public <T2> Promise<T2, E> then(final Map<T, T2> map) {
+        final Promise<T2, E> newPromise = new Promise<T2, E>(cancelToken);
         listen(new Adapter<T, E>() {
             @Override
             public void success(T result) {
-                newPromise.deliver(Result.<B, E>success(map.map(result)));
+                newPromise.deliver(Result.<T2, E>success(map.map(result)));
             }
 
             @Override
             public void error(E error) {
-                newPromise.deliver(Result.<B, E>error(error));
+                newPromise.deliver(Result.<T2, E>error(error));
             }
 
             @Override
@@ -207,24 +208,17 @@ public class Promise<T, E extends Exception> {
      * cancellation and the second {@code Promise} is never called.
      *
      * @param chain the {@link Promise.Chain} that constructs the second {@code Promise}
-     * @param <B>   the type of the second {@code Promise} success result
-     * @param <ER>  the type of the second {@code Promise} error result
-     * @param <E2>  the type of the new {@code Promise} error result.The reason this is a separate
-     *              type is to allow chaining of promises with different error types. Since the
-     *              original error may be passed through, this must be a superclass of both the
-     *              first and second {@code Promise} error types.
+     * @param <T2>  the type of the second {@code Promise} success result
      * @return the new {@code Promise}
      */
-    public <B, ER extends Exception, E2 extends ER> Promise<B, ER> then(final Chain<T, B, ER, E2> chain) {
-        final Promise<B, ER> newPromise = new Promise<B, ER>(cancelToken);
+    public <T2> Promise<T2, E> then(final Chain<T, T2, E> chain) {
+        final Promise<T2, E> newPromise = new Promise<T2, E>(cancelToken);
         listen(new Adapter<T, E>() {
             @Override
             public void success(T result) {
-                Promise<B, E2> chainedPromise = chain.chain(result);
-                // Fighting the type system
-                ((Promise<B, ER>) chainedPromise).listen(new Listener<B, ER>() {
+                chain.chain(result).listen(new Listener<T2, E>() {
                     @Override
-                    public void result(Result<B, ER> result) {
+                    public void result(Result<T2, E> result) {
                         newPromise.deliver(result);
                     }
                 });
@@ -233,7 +227,7 @@ public class Promise<T, E extends Exception> {
             @Override
             public void error(E error) {
                 // ER must be a superclass of E
-                newPromise.deliver(Result.<B, ER>error((ER) error));
+                newPromise.deliver(Result.<T2, E>error(error));
             }
 
             @Override
@@ -245,7 +239,20 @@ public class Promise<T, E extends Exception> {
     }
 
     /**
-     * A listener for receiving the result of a promise.
+     * Forces a cast of a promise to a super-type to get around covariance restrictions. {@code T2}
+     * and {@code E2} must be a superclass of {@code T} and {@code E} respectively. This is safe
+     * because you can't directly deliver results to the cast promise.
+     *
+     * @param <T2> the type of the success value to cast to.
+     * @param <E2> the type of the error type to cast to.
+     * @return a cast of the promise.
+     */
+    public <T2, E2 extends Exception> Promise<T2, E2> cast() {
+        return (Promise<T2, E2>) this;
+    }
+
+    /**
+     * T1 listener for receiving the result of a promise.
      *
      * @param <T> the success result type
      * @param <E> the error result type
@@ -288,26 +295,24 @@ public class Promise<T, E extends Exception> {
     /**
      * Maps the result of one {@code Promise} to the result of another {@code Promise}
      *
-     * @param <A> the type of the original {@code Promise} success result
-     * @param <B> the type of the new {@code Promise} success result
+     * @param <T1> the type of the original {@code Promise} success result
+     * @param <T2> the type of the new {@code Promise} success result
      * @see Promise#then(Promise.Map)
      */
-    public interface Map<A, B> {
-        public B map(A result);
+    public interface Map<T1, T2> {
+        public T2 map(T1 result);
     }
 
     /**
      * Chains the result of one {@code Promise} to second {@code Promise}.
      *
-     * @param <A>  the type of the original {@code Promise} success result
-     * @param <B>  the type of the second {@code Promise} success result
-     * @param <ER> the type of the chain's error result. The must be a superclass of the error
-     *             result of the first and second {@code Promise}.
+     * @param <T1> the type of the original {@code Promise} success result
+     * @param <T2> the type of the second {@code Promise} success result
      * @param <E>  the type of the second {@code Promise} error result
      * @see Promise#then(Promise.Chain)
      */
-    public interface Chain<A, B, ER extends Exception, E extends ER> {
-        public Promise<B, E> chain(A result);
+    public interface Chain<T1, T2, E extends Exception> {
+        public Promise<T2, E> chain(T1 result);
     }
 
     /**

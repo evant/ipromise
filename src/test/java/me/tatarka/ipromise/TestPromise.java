@@ -122,7 +122,7 @@ public class TestPromise {
         Promise<String, Exception> promise1 = deferred1.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
+        promise1.then(new Promise.Chain<String, Integer, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();
@@ -142,7 +142,7 @@ public class TestPromise {
         Promise<String, Exception> promise1 = deferred1.promise();
         Exception result = new Exception("error");
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
+        promise1.then(new Promise.Chain<String, Integer, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();
@@ -161,7 +161,7 @@ public class TestPromise {
         Deferred<String, Exception> deferred1 = new Deferred<String, Exception>();
         Promise<String, Exception> promise1 = deferred1.promise();
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
+        promise1.then(new Promise.Chain<String, Integer, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();
@@ -181,7 +181,7 @@ public class TestPromise {
         Promise<String, Exception> promise1 = deferred1.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise1.then(new Promise.Chain<String, Integer, Exception, Exception>() {
+        promise1.then(new Promise.Chain<String, Integer, Exception>() {
             @Override
             public Promise<Integer, Exception> chain(String result) {
                 Deferred<Integer, Exception> deferred2 = new Deferred<Integer, Exception>();

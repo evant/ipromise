@@ -20,12 +20,12 @@ async1(arg, new Callback1() {
 ```
 Into this:
 ```java
-async1(arg).then(new Promise.Chain<Result1, Result2, Exception, Error2>() {
+async1(arg).then(new Promise.Chain<Result1, Result2, Error>() {
 	@Override
-	public Promise<Result2, Exception> chain(Result1 result1) {
+	public Promise<Result2, Error> chain(Result1 result1) {
 		return async2(result2);
 	}
-}).listen(new Promise.Adapter<Result2, Exception>() {
+}).listen(new Promise.Adapter<Result2, Error>() {
 	@Override
 	public void success(Result2 result) {
 		// Isn't this nicer?
@@ -44,25 +44,25 @@ async1(arg, new Callback1() {
 				// Finnaly! do something with result2.
 			}
 			@Override
-			public void onError(Error2 error2) {
+			public void onError(Error error) {
 				// Take care of the error on the second callback
 			}
 		}
 	}
 	@Override
-	public void onError(Error1 erro1) {
+	public void onError(Error error) {
 		// Take care of the error on the first callback
 	}
 }
 ```
 See how the error handling is all over the place? And you would have duplicate code if your error handling in both places was the same.
 ```java
-async1(arg).then(new Promise.Chain<Result1, Result2, Error, Error2>() {
+async1(arg).then(new Promise.Chain<Result1, Result2, Error>() {
 	@Override
 	public Promise<Result2, Error> chain(Result1 result1) {
 		return async2(result2);
 	}
-}).listen(new Promise.Adapter<Result2, Exception>() {
+}).listen(new Promise.Adapter<Result2, Error>() {
 	@Override
 	public void success(Result2 result) {
 		// Isn't this nicer?
@@ -89,13 +89,13 @@ async1(arg, new Callback1() {
 				// Finnaly! do something with result2.
 			}
 			@Override
-			public void onError(Error2 error2) {
+			public void onError(Error error) {
 				// Take care of the error on the second callback
 			}
 		}
 	}
 	@Override
-	public void onError(Error1 erro1) {
+	public void onError(Error error) {
 		// Take care of the error on the first callback
 	}
 }
@@ -106,12 +106,12 @@ public void userCancel() {
 ```
 This code is starting to look like a mess! With promises it's so much easier:
 ```java
-Promise<Result2, Error> promise = async1(arg).then(new Promise.Chain<Result1, Result2, Error, Error2>() {
+Promise<Result2, Error> promise = async1(arg).then(new Promise.Chain<Result1, Result2, Error>() {
 	@Override
-	public Promise<Result2, Exception> chain(Result1 result1) {
+	public Promise<Result2, Error> chain(Result1 result1) {
 		return async2(result2);
 	}
-}).listen(new Promise.Adapter<Result2, Exception>() {
+}).listen(new Promise.Adapter<Result2, Error>() {
 	@Override
 	public void success(Result2 result) {
 		// Isn't this nicer?
