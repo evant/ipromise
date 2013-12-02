@@ -152,7 +152,7 @@ public final class Result<T, E extends Exception> {
         protected void error(E error) {}
     }
 
-    public static abstract class Map<T1, T2, E extends Exception> implements Promise.Map<Result<T1, E>, Result<T2, E>> {
+    public static abstract class Map<T1, T2, E extends Exception> implements me.tatarka.ipromise.Map<Result<T1, E>, Result<T2, E>> {
         @Override
         public final Result<T2, E> map(Result<T1, E> result) {
             if (result.isSuccess()) {
@@ -169,9 +169,9 @@ public final class Result<T, E extends Exception> {
         }
     }
 
-    public static abstract class Chain<T1, T2, E extends Exception> implements Promise.Chain<Result<T1, E>, Result<T2, E>> {
+    public static abstract class Chain<T1, E extends Exception, R> implements me.tatarka.ipromise.Chain<Result<T1, E>, R> {
         @Override
-        public final Promise<Result<T2, E>> chain(Result<T1, E> result) {
+        public final R chain(Result<T1, E> result) {
             if (result.isSuccess()) {
                 return success(result.getSuccess());
             } else {
@@ -179,10 +179,21 @@ public final class Result<T, E extends Exception> {
             }
         }
 
-        protected abstract Promise<Result<T2, E>> success(T1 success);
+        protected abstract R success(T1 success);
+        protected abstract R error(E error);
+    }
 
+    public static abstract class ChainPromise<T1, T2, E extends Exception> extends Chain<T1, E, Promise<Result<T2, E>>> {
+        @Override
         protected Promise<Result<T2, E>>  error(E error) {
             return new Promise<Result<T2, E>>(Result.<T2, E>error(error));
+        }
+    }
+
+    public static abstract class ChainProgress<T1, T2, E extends Exception> extends Chain<T1, E, Progress<Result<T2, E>>> {
+        @Override
+        protected Progress<Result<T2, E>>  error(E error) {
+            return new Progress<Result<T2, E>>(Result.<T2, E>error(error));
         }
     }
 }

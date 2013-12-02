@@ -72,7 +72,7 @@ public class TestPromise {
         Promise<String> promise = deferred.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise.then(new Promise.Map<String, Integer>() {
+        promise.then(new Map<String, Integer>() {
             @Override
             public Integer map(String result) {
                 return result.length();
@@ -89,7 +89,7 @@ public class TestPromise {
         Promise<String> promise1 = deferred1.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise1.then(new Promise.Chain<String, Integer>() {
+        promise1.then(new Chain<String, Promise<Integer>>() {
             @Override
             public Promise<Integer> chain(String result) {
                 Deferred<Integer> deferred2 = new Deferred<Integer>();
@@ -111,7 +111,7 @@ public class TestPromise {
         final Promise<Integer> promise2 = deferred2.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise1.then(new Promise.Chain<String, Integer>() {
+        promise1.then(new Chain<String, Promise<Integer>>() {
             @Override
             public Promise<Integer> chain(String result) {
                 deferred2.resolve(result.length());
@@ -133,7 +133,7 @@ public class TestPromise {
         final Promise<Integer> promise2 = deferred2.promise();
         String result = "success";
         Promise.Listener listener = mock(Promise.Listener.class);
-        promise1.then(new Promise.Chain<String, Integer>() {
+        promise1.then(new Chain<String, Promise<Integer>>() {
             @Override
             public Promise<Integer> chain(String result) {
                 deferred2.resolve(result.length());

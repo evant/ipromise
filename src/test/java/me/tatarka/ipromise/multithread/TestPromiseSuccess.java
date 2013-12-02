@@ -8,7 +8,6 @@ import edu.umd.cs.mtc.MultiThreadedRunner;
 import edu.umd.cs.mtc.MultithreadedTestCase;
 import edu.umd.cs.mtc.Threaded;
 import me.tatarka.ipromise.Promise;
-import me.tatarka.ipromise.Result;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
