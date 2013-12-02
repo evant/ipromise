@@ -3,23 +3,9 @@ package me.tatarka.ipromise;
 /**
  * A {@code Deferred} is the producer end of a {@link Promise}. An asynchronous method creates a
  * {@code Deferred} and returns {@link Deferred#promise()}, then calls {@link
- * Deferred#resolve(Object)}. at a later time.
- * <pre>
- * <code>
- * public Promise{@code <Result, Error>} async() {
- *     final Deferred{@code <Result, Error>} deferred = new Deferred{@code <Result, Error>}();
- *         doAsync(new Callback() {
- *             {@literal @}Override
- *             public void onResult(Result result) {
- *                 deferred.deliver(result);
- *             }
- *         });
- *     return deferred.promise();
- * }
- * </code>
- * </pre>
+ * Deferred#resolve(Object)} at a later time.
  *
- * @param <T> the type of a successful result
+ * @param <T> the type of a result
  */
 public class Deferred<T> {
     private Promise<T> promise;
@@ -41,7 +27,7 @@ public class Deferred<T> {
      * If the promise has already been canceled, the result will not be stored and listeners will
      * not be notified.
      *
-     * @param result the successful result to reject.
+     * @param result the result to reject.
      * @throws Promise.AlreadyDeliveredException throws if a result has already been delivered.
      */
     public synchronized void resolve(T result) {
