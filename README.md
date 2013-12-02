@@ -1,13 +1,14 @@
 ipromise
 ======
 Writing asynchronous code can quickly become painful, especially when you need to make multiple calls, due to each method taking it's own callback and having it's own idea of error handling and cancellation. Promises alleviate this by providing a uniform interface and by turning callback style into the same return style of synchronous code.
+
 Usage
--------
+-----
 You can turn this:
 
 ```java
 async1(arg, new Callback1() {
-	@Override
+    @Override
 	public void onResult(MyResult1 result1) {
 		async2(result1, new Callback2() {
 			@Override
@@ -20,7 +21,7 @@ async1(arg, new Callback1() {
 ```
 Into this:
 ```java
-async1(arg).then(new Promise.Chain<MyResult1, MyResult2>() {
+async1(arg).then(new Chain<MyResult1, Promise<MyResult2>>() {
 	@Override
 	public Promise<MyResult2> chain(MyResult1 result1) {
 		return async2(result2);
@@ -57,7 +58,7 @@ async1(arg, new Callback1() {
 ```
 See how the error handling is all over the place? And you would have duplicate code if your error handling in both places was the same.
 ```java
-async1(arg).then(new Result.Chain<MyResult1, MyResult2, Error>() {
+async1(arg).then(new Result.ChainPromise<MyResult1, MyResult2, Error>() {
 	@Override
 	public Promise<Result<MyResult2, Error>> success(MyResult1 result1) {
 		return async2(result1);
@@ -106,7 +107,7 @@ public void userCancel() {
 ```
 This code is starting to look like a mess! With promises it's so much easier:
 ```java
-Promise<Result<Result2, Error>> promise = async1(arg).then(new Result.Chain<Result1, Result2, Error>() {
+Promise<Result<Result2, Error>> promise = async1(arg).then(new Result.ChainPromise<Result1, Result2, Error>() {
 	@Override
 	public Promise<Result<Result2, Error>> success(Result1 result1) {
 		return async2(result1);
@@ -127,8 +128,9 @@ public void userCancel() {
 }
 ```
 And if the library does support cancellation of methods, it can just listen for a cancellation on the promise.
+
 Implementing Promises
------------------------------
+---------------------
 So you have lots of code lying around that uses callbacks? Wrapping it up is super easy.
 ```java
 public void asyncWithCallback(Arg arg, Callback callback) {
@@ -150,8 +152,40 @@ public Promise<Result<MyResult, Error>> asyncWithPromise(Arg arg) {
 	return deferred.promise();
 }
 ```
+Progress
+--------
+If you have to return multiple results over time, you can use a `Progress` instead of a `Promise`. Note that a `Progress` can only have one listener.
+
+```java
+Progress<Integer> progress = asyncProgress();
+progress.listen(new Progress.Listener<Integer>() {
+    @Override
+    public void receive(Integer message) {
+        // This is called on each progress update.
+    }
+});
+```
+
+Like using `Deferred` with `Promise`, you use `Channel` with `Progress`
+```java
+public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
+    final Channel<Result<MyProgress, Error>> channel = new Channel<Result<MyProgress, Error>>();
+	asyncWithProgressCallback(arg, new Callback() {
+		@Override
+		public void onProgress(MyProgres progress) {
+			channel.send(Result.<MyProgress, Error>success(progres));
+		}
+		@Override
+		public void onError(Error error) {
+			channel.send(Result.<MyProgress, Error>error(error));
+		}
+	});
+	return channel.progress();
+}
+```
+
 Cancellation
----------------
+------------
 If you have or want to create async methods that support cancellation, you need to use a `CancelToken`. This ensures the cancel propagates to all Promises.
 ```java
 public Promise<Integer> mySuperSlowMethod() {
@@ -188,3 +222,12 @@ public Promise<MyResult> yourSuperSlowMethod() {
 	return deferred.promise();
 }
 ```
+A `Progress` can be canceled the same way.
+
+A Note on Memory Usage
+----------------------
+Both `Promise` and `Progress` keep internal state about their results so that you can attach a listener at any time. This however can make it easy to leak memory.
+
+A `Promise` will store it's result forever. If this result is potentially very large, make sure that you don't keep a reference to the `Proimse` arround after the result is recieved. This could be made tricky by the fact that `Deferred` keeps a reference its `Promise`. For that reason, async code should never hold a refernce to `Defererd` longer than required.
+
+A `Progress` will buffer messages until a listener is attached. This means you must always call either `listen()` or `cancel()` on a `Progress`.
