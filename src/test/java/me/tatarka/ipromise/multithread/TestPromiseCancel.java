@@ -7,6 +7,7 @@ import org.junit.runner.RunWith;
 import edu.umd.cs.mtc.MultiThreadedRunner;
 import edu.umd.cs.mtc.MultithreadedTestCase;
 import edu.umd.cs.mtc.Threaded;
+import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Promise;
 
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.verify;
 public class TestPromiseCancel extends MultithreadedTestCase {
     Deferred<String> deferred = new Deferred<String>();
     Promise<String> promise = deferred.promise();
-    Promise.Listener listener = mock(Promise.Listener.class);
+    Listener listener = mock(Listener.class);
 
     @Threaded
     public void thread1() {
@@ -38,7 +39,7 @@ public class TestPromiseCancel extends MultithreadedTestCase {
 
     @Test
     public void test() {
-        verify(listener, never()).result("success");
+        verify(listener, never()).receive("success");
         assertThat(promise.isCanceled()).isTrue();
     }
 }

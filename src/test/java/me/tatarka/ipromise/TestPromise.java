@@ -19,11 +19,11 @@ public class TestPromise {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         promise.listen(listener);
         deferred.resolve(result);
 
-        verify(listener).result(result);
+        verify(listener).receive(result);
     }
 
     @Test
@@ -31,11 +31,11 @@ public class TestPromise {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         deferred.resolve(result);
         promise.listen(listener);
 
-        verify(listener).result(result);
+        verify(listener).receive(result);
     }
 
     @Test
@@ -43,12 +43,12 @@ public class TestPromise {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         promise.listen(listener);
         promise.cancel();
         deferred.resolve(result);
 
-        verify(listener, never()).result(result);
+        verify(listener, never()).receive(result);
         assertThat(promise.isCanceled()).isTrue();
     }
 
@@ -57,12 +57,12 @@ public class TestPromise {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         promise.cancel();
         promise.listen(listener);
         deferred.resolve(result);
 
-        verify(listener, never()).result(result);
+        verify(listener, never()).receive(result);
         assertThat(promise.isCanceled()).isTrue();
     }
 
@@ -71,7 +71,7 @@ public class TestPromise {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         promise.then(new Map<String, Integer>() {
             @Override
             public Integer map(String result) {
@@ -80,7 +80,7 @@ public class TestPromise {
         }).listen(listener);
         deferred.resolve(result);
 
-        verify(listener).result(result.length());
+        verify(listener).receive(result.length());
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TestPromise {
         Deferred<String> deferred1 = new Deferred<String>();
         Promise<String> promise1 = deferred1.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         promise1.then(new Chain<String, Promise<Integer>>() {
             @Override
             public Promise<Integer> chain(String result) {
@@ -100,7 +100,7 @@ public class TestPromise {
         }).listen(listener);
         deferred1.resolve(result);
 
-        verify(listener).result(result.length());
+        verify(listener).receive(result.length());
     }
 
     @Test
@@ -110,7 +110,7 @@ public class TestPromise {
         final Deferred<Integer> deferred2 = new Deferred<Integer>();
         final Promise<Integer> promise2 = deferred2.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         promise1.then(new Chain<String, Promise<Integer>>() {
             @Override
             public Promise<Integer> chain(String result) {
@@ -121,7 +121,7 @@ public class TestPromise {
         promise1.cancel();
         deferred1.resolve(result);
 
-        verify(listener, never()).result(result);
+        verify(listener, never()).receive(result);
         assertThat(promise1.isCanceled()).isTrue();
     }
 
@@ -132,7 +132,7 @@ public class TestPromise {
         final Deferred<Integer> deferred2 = new Deferred<Integer>();
         final Promise<Integer> promise2 = deferred2.promise();
         String result = "success";
-        Promise.Listener listener = mock(Promise.Listener.class);
+        Listener listener = mock(Listener.class);
         promise1.then(new Chain<String, Promise<Integer>>() {
             @Override
             public Promise<Integer> chain(String result) {
@@ -143,7 +143,7 @@ public class TestPromise {
         promise1.listen(listener);
         deferred1.resolve(result);
 
-        verify(listener, never()).result(result);
+        verify(listener, never()).receive(result);
         assertThat(promise1.isCanceled()).isTrue();
     }
 }

@@ -138,9 +138,9 @@ public final class Result<T, E extends Exception> {
         }
     }
 
-    public static abstract class Listener<T, E extends Exception> implements Promise.Listener<Result<T, E>> {
+    public static abstract class Listener<T, E extends Exception> implements me.tatarka.ipromise.Listener<Result<T, E>> {
         @Override
-        public final void result(Result<T, E> result) {
+        public final void receive(Result<T, E> result) {
             if (result.isSuccess()) {
                 success(result.getSuccess());
             } else {

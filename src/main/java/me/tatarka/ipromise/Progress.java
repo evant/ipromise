@@ -177,13 +177,4 @@ public class Progress<T> {
             super("Cannot add listener " + listener + " because progress " + progress + " already has a listener");
         }
     }
-
-    /**
-     * A listener for receiving the messages of a progress.
-     *
-     * @param <T> the message type
-     */
-    public interface Listener<T> {
-        void receive(T message);
-    }
 }

@@ -65,7 +65,7 @@ public class Promise<T> {
         this.result = result;
         isFinished = true;
         for (Listener<T> listener : listeners) {
-            listener.result(result);
+            listener.receive(result);
         }
         listeners.clear();
     }
@@ -107,7 +107,7 @@ public class Promise<T> {
         if (isFinished) {
             return result;
         } else {
-            throw new NotFinishedException(this, "cannot get result");
+            throw new NotFinishedException(this, "cannot get receive");
         }
     }
 
@@ -123,7 +123,7 @@ public class Promise<T> {
         if (listener == null) return this;
 
         if (isFinished) {
-            listener.result(result);
+            listener.receive(result);
         } else {
             listeners.add(listener);
         }
@@ -144,7 +144,7 @@ public class Promise<T> {
         final Promise<T2> newPromise = new Promise<T2>(cancelToken);
         listen(new Listener<T>() {
             @Override
-            public void result(T result) {
+            public void receive(T result) {
                 newPromise.deliver(map.map(result));
             }
         });
@@ -162,12 +162,12 @@ public class Promise<T> {
         final Promise<T2> newPromise = new Promise<T2>(cancelToken);
         listen(new Listener<T>() {
             @Override
-            public void result(T result) {
+            public void receive(T result) {
                 final Promise<T2> chainedPromise = chain.chain(result);
                 CancelToken.join(cancelToken, chainedPromise.cancelToken);
                 chainedPromise.listen(new Listener<T2>() {
                     @Override
-                    public void result(T2 result) {
+                    public void receive(T2 result) {
                         newPromise.deliver(result);
                     }
                 });
@@ -208,13 +208,4 @@ public class Promise<T> {
         }
     }
 
-    /**
-     * A listener for receiving the result of a promise.
-     *
-     * @param <T> the result type
-     * @see me.tatarka.ipromise.Promise#listen(Listener)
-     */
-    public interface Listener<T> {
-        public void result(T result);
-    }
 }

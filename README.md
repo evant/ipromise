@@ -28,7 +28,7 @@ async1(arg).then(new Chain<MyResult1, Promise<MyResult2>>() {
 	}
 }).listen(new Promise.Listener<MyResult2>() {
 	@Override
-	public void result(MyResult2 result) {
+	public void receive(MyResult2 result) {
 		// Isn't this nicer?
 	}
 });
