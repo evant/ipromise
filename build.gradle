@@ -33,6 +33,6 @@ targetCompatibility = 1.6
 githubPages {
     repoUri = 'git@github.com:evant/ipromise.git'
     pages {
-        workingPath = 'build/docs'
+        workingPath = 'build/docs/javadoc'
     }
 }
