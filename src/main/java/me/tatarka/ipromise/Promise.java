@@ -7,10 +7,10 @@ import java.util.List;
  * A promise is a way to return a result the will be fulfilled sometime in the future. This fixes
  * the inversion of control that callback-style functions creates and restores the composeability of
  * return values.
- * <p/>
+ *
  * In addition to creating a standard interface for all asynchronous functions, Promises can also
  * more-robustly handle error and cancellation situations.
- * <p/>
+ *
  * You cannot construct a {@code Promise} directly, instead you must get one from a {@link
  * Deferred}. That is, unless the result is already available.
  *
