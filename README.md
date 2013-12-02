@@ -13,7 +13,7 @@ async1(arg, new Callback1() {
 		async2(result1, new Callback2() {
 			@Override
 			public void onResult(MyResult2 result2) {
-				// Finnaly! do something with result2.
+				// Finally! do something with result2.
 			}
 		}
 	}
@@ -172,8 +172,8 @@ public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
     final Channel<Result<MyProgress, Error>> channel = new Channel<Result<MyProgress, Error>>();
 	asyncWithProgressCallback(arg, new Callback() {
 		@Override
-		public void onProgress(MyProgres progress) {
-			channel.send(Result.<MyProgress, Error>success(progres));
+		public void onProgress(MyProgress progress) {
+			channel.send(Result.<MyProgress, Error>success(progress));
 		}
 		@Override
 		public void onError(Error error) {
