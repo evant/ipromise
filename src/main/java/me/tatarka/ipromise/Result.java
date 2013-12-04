@@ -108,6 +108,38 @@ public final class Result<T, E extends Exception> {
         return state == ERROR;
     }
 
+    public <T2> Result<T2, E> success(me.tatarka.ipromise.Map<T, T2> map) {
+        if (isSuccess()) {
+            return Result.success(map.map(getSuccess()));
+        } else {
+            return (Result<T2, E>) this;
+        }
+    }
+
+    public <E2 extends Exception> Result<T, E2> error(me.tatarka.ipromise.Map<E, E2> map) {
+        if (isError()) {
+            return Result.error(map.map(getError()));
+        } else {
+            return (Result<T, E2>) this;
+        }
+    }
+
+    public <T2> Result<T2, E> success(me.tatarka.ipromise.Chain<T, Result<T2, E>> chain) {
+        if (isSuccess()) {
+            return chain.chain(getSuccess());
+        } else {
+            return (Result<T2, E>) this;
+        }
+    }
+
+    public <E2 extends Exception> Result<T, E2> error(me.tatarka.ipromise.Chain<E, Result<T, E2>> chain) {
+        if (isError()) {
+            return chain.chain(getError());
+        } else {
+            return (Result<T, E2>) this;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || !o.getClass().equals(getClass())) return false;
@@ -183,9 +215,16 @@ public final class Result<T, E extends Exception> {
         protected abstract R error(E error);
     }
 
+    public static abstract class ChainResult<T1, T2, E extends Exception> extends Chain<T1, E, Result<T2, E>> {
+        @Override
+        protected Result<T2, E> error(E error) {
+            return Result.error(error);
+        }
+    }
+
     public static abstract class ChainPromise<T1, T2, E extends Exception> extends Chain<T1, E, Promise<Result<T2, E>>> {
         @Override
-        protected Promise<Result<T2, E>>  error(E error) {
+        protected Promise<Result<T2, E>> error(E error) {
             return new Promise<Result<T2, E>>(Result.<T2, E>error(error));
         }
     }

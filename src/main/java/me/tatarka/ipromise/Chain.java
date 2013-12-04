@@ -7,5 +7,5 @@ package me.tatarka.ipromise;
  * @param <T2> the type of the second value
  */
 public interface Chain<T1, T2> {
-    T2 chain(T1 chain);
+    T2 chain(T1 result);
 }

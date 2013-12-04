@@ -1,8 +1,14 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.unit;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import me.tatarka.ipromise.Chain;
+import me.tatarka.ipromise.Deferred;
+import me.tatarka.ipromise.Listener;
+import me.tatarka.ipromise.Map;
+import me.tatarka.ipromise.Promise;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

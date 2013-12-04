@@ -26,7 +26,7 @@ public class Promise<T> {
     /**
      * Constructs a new promise. This is used internally by {@link Deferred}.
      */
-    Promise() {
+    public Promise() {
         this(new CancelToken());
     }
 
@@ -75,7 +75,10 @@ public class Promise<T> {
      * Promises that share the {@link CancelToken}.
      */
     public synchronized void cancel() {
-        if (!isFinished) cancelToken.cancel();
+        if (!isFinished) {
+            listeners.clear();
+            cancelToken.cancel();
+        }
     }
 
     /**

@@ -20,8 +20,9 @@ repositories {
 dependencies {
     testCompile 'junit:junit:4.11'
     testCompile 'org.easytesting:fest-assert-core:2.0M10'
-    testCompile "org.mockito:mockito-all:1.9.5"
+    testCompile 'org.mockito:mockito-all:1.9.5'
     testCompile 'edu.umd.cs.mtc:multithreadedtc:1.01-junit4'
+    testCompile 'org.databene:contiperf:2.2.0'
 }
 
 group = 'me.tatarka'

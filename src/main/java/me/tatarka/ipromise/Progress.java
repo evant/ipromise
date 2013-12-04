@@ -16,6 +16,7 @@ public class Progress<T> {
     private CancelToken cancelToken;
     private List<T> messageBuffer;
     private Listener<T> listener;
+    private boolean hasListener;
 
     /**
      * Constructs a new progress. This is used internally by {@link Channel}.
@@ -79,6 +80,7 @@ public class Progress<T> {
     public synchronized void cancel() {
         cancelToken.cancel();
         messageBuffer.clear();
+        listener = null;
     }
 
     /**
@@ -100,15 +102,17 @@ public class Progress<T> {
      * @throws IllegalStateException when a listener has already been added
      */
     public synchronized Progress<T> listen(Listener<T> listener) {
-        if (listener == null) return this;
-
-        if (this.listener != null) {
+        if (hasListener) {
             throw new AlreadyAddedListenerException(this, listener);
         }
 
+        hasListener = true;
         this.listener = listener;
-        for (T message : messageBuffer) {
-            listener.receive(message);
+
+        if (listener != null) {
+            for (T message : messageBuffer) {
+                listener.receive(message);
+            }
         }
         messageBuffer.clear();
 

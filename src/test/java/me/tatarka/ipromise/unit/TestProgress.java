@@ -1,8 +1,14 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.unit;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import me.tatarka.ipromise.Chain;
+import me.tatarka.ipromise.Channel;
+import me.tatarka.ipromise.Listener;
+import me.tatarka.ipromise.Map;
+import me.tatarka.ipromise.Progress;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -17,7 +23,7 @@ public class TestProgress {
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2";
-        Progress.Listener listener = mock(Progress.Listener.class);
+        Listener listener = mock(Listener.class);
         progress.listen(listener);
         channel.send(result1);
         channel.send(result2);
@@ -32,7 +38,7 @@ public class TestProgress {
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2";
-        Progress.Listener listener = mock(Progress.Listener.class);
+        Listener listener = mock(Listener.class);
         channel.send(result1);
         channel.send(result2);
         progress.listen(listener);
@@ -46,7 +52,7 @@ public class TestProgress {
         Channel<String> channel = new Channel<String>();
         Progress<String> progress = channel.progress();
         String result = "success";
-        Progress.Listener listener = mock(Progress.Listener.class);
+        Listener listener = mock(Listener.class);
         progress.listen(listener);
         progress.cancel();
         channel.send(result);
@@ -60,7 +66,7 @@ public class TestProgress {
         Channel<String> channel = new Channel<String>();
         Progress<String> progress = channel.progress();
         String result = "success";
-        Progress.Listener listener = mock(Progress.Listener.class);
+        Listener listener = mock(Listener.class);
         progress.cancel();
         progress.listen(listener);
         channel.send(result);
@@ -75,7 +81,7 @@ public class TestProgress {
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2--";
-        Progress.Listener listener = mock(Progress.Listener.class);
+        Listener listener = mock(Listener.class);
         progress.then(new Map<String, Integer>() {
             @Override
             public Integer map(String result) {
@@ -95,7 +101,7 @@ public class TestProgress {
         Progress<String> progress1 = channel1.progress();
         String result1 = "result1";
         String result2 = "result2--";
-        Progress.Listener listener = mock(Progress.Listener.class);
+        Listener listener = mock(Listener.class);
         progress1.then(new Chain<String, Progress<Integer>>() {
             @Override
             public Progress<Integer> chain(String result) {
@@ -113,5 +119,36 @@ public class TestProgress {
         verify(listener).receive(result1.length() + 1);
         verify(listener).receive(result2.length());
         verify(listener).receive(result2.length() + 1);
+    }
+
+    @Test(expected = Progress.AlreadyAddedListenerException.class)
+    public void testErrorOnTwoListeners() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        progress.listen(new Listener<String>() {
+            @Override
+            public void receive(String result) {
+
+            }
+        });
+        progress.listen(new Listener<String>() {
+            @Override
+            public void receive(String result) {
+
+            }
+        });
+    }
+
+    @Test(expected = Progress.AlreadyAddedListenerException.class)
+    public void testNullCountsAsListener() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        progress.listen(null);
+        progress.listen(new Listener<String>() {
+            @Override
+            public void receive(String result) {
+
+            }
+        });
     }
 }
