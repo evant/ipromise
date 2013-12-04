@@ -236,3 +236,5 @@ Both `Promise` and `Progress` keep internal state about their results so that yo
 A `Promise` will store it's result forever. If this result is potentially very large, make sure that you don't keep a reference to the `Proimse` arround after the result is recieved. This could be made tricky by the fact that `Deferred` keeps a reference its `Promise`. For that reason, async code should never hold a refernce to `Defererd` longer than required.
 
 A `Progress` will buffer messages until a listener is attached. This means you must always call either `listen()` or `cancel()` on a `Progress`.
+
+Also remember that anonymous inner classes (which you are probably using for callbacks) will keep a reference to their outer class even if you don't reference anything from it. This means that the outer class will not be garbage collected until the `Promise` completes or the `Channel` for a `Progress` is closed. The easiest way arround this is to call `cancel()` on the `Promise` or `Progress` when it's no longer needed.
