@@ -151,4 +151,30 @@ public class TestProgress {
             }
         });
     }
+
+    @Test(expected = Channel.ClosedChannelException.class)
+    public void testCantSendMessageAfterClose() {
+        Channel<String> channel = new Channel<String>();
+        channel.send("message");
+        channel.close();
+        channel.send("bad message");
+    }
+
+    @Test(expected = Channel.ClosedChannelException.class)
+    public void testCantGetProgressAfterClosed() {
+        Channel<String> channel = new Channel<String>();
+        channel.close();
+        channel.progress();
+    }
+
+    @Test
+    public void testCloseShouldNotPreventListenerFromBeingAdded() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        Listener listener = mock(Listener.class);
+        channel.send("message");
+        channel.close();
+        progress.listen(listener);
+        verify(listener).receive("message");
+    }
 }

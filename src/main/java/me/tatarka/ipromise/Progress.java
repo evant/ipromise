@@ -17,6 +17,7 @@ public class Progress<T> {
     private List<T> messageBuffer;
     private Listener<T> listener;
     private boolean hasListener;
+    private boolean isClosed;
 
     /**
      * Constructs a new progress. This is used internally by {@link Channel}.
@@ -52,8 +53,8 @@ public class Progress<T> {
      * can send the messages immediately.
      *
      * @param messages the messages to send
-         */
-    public Progress(T...messages) {
+     */
+    public Progress(T... messages) {
         this(Arrays.asList(messages));
     }
 
@@ -70,6 +71,15 @@ public class Progress<T> {
         } else {
             messageBuffer.add(message);
         }
+    }
+
+    /**
+     * Notifies the progress that no more messages will be sent. This is used internally by {@link
+     * Channel}.
+     */
+    synchronized void close() {
+        isClosed = true;
+        listener = null;
     }
 
     /**
@@ -107,7 +117,6 @@ public class Progress<T> {
         }
 
         hasListener = true;
-        this.listener = listener;
 
         if (listener != null) {
             for (T message : messageBuffer) {
@@ -115,6 +124,10 @@ public class Progress<T> {
             }
         }
         messageBuffer.clear();
+
+        if (!isClosed) {
+            this.listener = listener;
+        }
 
         return this;
     }
@@ -147,11 +160,12 @@ public class Progress<T> {
      * @return the new {@code Progress}
      */
     public synchronized <T2> Progress<T2> then(final Chain<T, Progress<T2>> chain) {
-        final Progress<T2> newProgress = new Progress<T2>();
+        final Progress<T2> newProgress = new Progress<T2>(cancelToken);
         listen(new Listener<T>() {
             @Override
             public void receive(T message) {
                 Progress<T2> chainProgress = chain.chain(message);
+                CancelToken.join(cancelToken, chainProgress.cancelToken);
                 chainProgress.listen(new Listener<T2>() {
                     @Override
                     public void receive(T2 message) {

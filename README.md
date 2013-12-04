@@ -152,6 +152,7 @@ public Promise<Result<MyResult, Error>> asyncWithPromise(Arg arg) {
 	return deferred.promise();
 }
 ```
+
 Progress
 --------
 If you have to return multiple results over time, you can use a `Progress` instead of a `Promise`. Note that a `Progress` can only have one listener.
@@ -166,7 +167,7 @@ progress.listen(new Progress.Listener<Integer>() {
 });
 ```
 
-Like using `Deferred` with `Promise`, you use `Channel` with `Progress`
+Like using `Deferred` with `Promise`, you use `Channel` with `Progress`. Unlike `Promise` however, you need to make sure you close your `Channel` when you are done sending messages.
 ```java
 public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
     final Channel<Result<MyProgress, Error>> channel = new Channel<Result<MyProgress, Error>>();
@@ -174,6 +175,10 @@ public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
 		@Override
 		public void onProgress(MyProgress progress) {
 			channel.send(Result.<MyProgress, Error>success(progress));
+		}
+		@Override
+		public void onFinish() {
+		    channel.close();
 		}
 		@Override
 		public void onError(Error error) {

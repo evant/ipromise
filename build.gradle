@@ -28,9 +28,6 @@ dependencies {
 group = 'me.tatarka'
 version = '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
-
 githubPages {
     repoUri = 'git@github.com:evant/ipromise.git'
     pages {

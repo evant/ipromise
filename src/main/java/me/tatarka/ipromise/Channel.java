@@ -7,7 +7,7 @@ package me.tatarka.ipromise;
  *
  * @param <T> the type of a message
  */
-public class Channel<T> {
+public class Channel<T> implements AutoCloseable {
     private Progress<T> progress;
 
     public Channel() {
@@ -19,6 +19,9 @@ public class Channel<T> {
     }
 
     public Progress<T> progress() {
+        if (progress == null) {
+            throw new ClosedChannelException();
+        }
         return progress;
     }
 
@@ -29,6 +32,23 @@ public class Channel<T> {
      * @param message the message to send
      */
     public void send(T message) {
+        if (progress == null) {
+            throw new ClosedChannelException();
+        }
         progress.deliver(message);
+    }
+
+    @Override
+    public void close() {
+        if (progress != null) {
+            progress.close();
+            progress = null;
+        }
+    }
+
+    public static class ClosedChannelException extends IllegalStateException {
+        public ClosedChannelException() {
+            super("channel has been closed");
+        }
     }
 }

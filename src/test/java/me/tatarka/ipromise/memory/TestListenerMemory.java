@@ -47,7 +47,7 @@ public class TestListenerMemory {
     }
 
     @Test
-    public void testProgressListenersClearedOnCancel() {
+    public void testProgressListenerClearedOnCancel() {
         Channel<String> channel = new Channel<String>();
         Progress<String> progress = channel.progress();
         Listener<String> listener = new Listener<String>() {
@@ -62,5 +62,41 @@ public class TestListenerMemory {
         MemoryLeakVerifier verifier = new MemoryLeakVerifier(listener);
         listener = null;
         verifier.assertGarbageCollected("Listener should be collected after cancel");
+    }
+
+    @Test
+    public void testProgressListenerClearedOnClose() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        Listener<String> listener = new Listener<String>() {
+            @Override
+            public void receive(String result) {
+
+            }
+        };
+        progress.listen(listener);
+        channel.send("result");
+        channel.close();
+        MemoryLeakVerifier verifier = new MemoryLeakVerifier(listener);
+        listener = null;
+        verifier.assertGarbageCollected("Listener should be collected after close");
+    }
+
+    @Test
+    public void testProgressListenerClearedOnCloseWithLateListener() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        Listener<String> listener = new Listener<String>() {
+            @Override
+            public void receive(String result) {
+
+            }
+        };
+        channel.send("result");
+        channel.close();
+        progress.listen(listener);
+        MemoryLeakVerifier verifier = new MemoryLeakVerifier(listener);
+        listener = null;
+        verifier.assertGarbageCollected("Listener should be collected after close");
     }
 }
