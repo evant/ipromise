@@ -55,7 +55,7 @@ public class TestResult {
     @Test
     public void testMapSuccess() {
         Result<String, Exception> result1 = Result.success("success");
-        Result<Integer, Exception> result2 = result1.success(new Map<String, Integer>() {
+        Result<Integer, Exception> result2 = result1.onSuccess(new Map<String, Integer>() {
             @Override
             public Integer map(String arg) {
                 return arg.length();
@@ -67,7 +67,7 @@ public class TestResult {
     @Test
     public void testChainSuccess() {
         Result<String, Exception> result1 = Result.success("success");
-        Result<Integer, Exception> result2 = result1.success(new Chain<String, Result<Integer, Exception>>() {
+        Result<Integer, Exception> result2 = result1.onSuccess(new Chain<String, Result<Integer, Exception>>() {
             @Override
             public Result<Integer, Exception> chain(String chain) {
                 return Result.success(chain.length());

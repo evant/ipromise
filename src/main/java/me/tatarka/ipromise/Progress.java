@@ -2,7 +2,6 @@ package me.tatarka.ipromise;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -17,6 +16,8 @@ public class Progress<T> {
     private List<T> messageBuffer;
     private Listener<T> listener;
     private boolean hasListener;
+    private CloseListener closeListener;
+    private boolean hasCloseListener;
     private boolean isClosed;
 
     /**
@@ -80,6 +81,11 @@ public class Progress<T> {
     synchronized void close() {
         isClosed = true;
         listener = null;
+
+        if (closeListener != null) {
+            closeListener.close();
+            closeListener = null;
+        }
     }
 
     /**
@@ -127,6 +133,32 @@ public class Progress<T> {
 
         if (!isClosed) {
             this.listener = listener;
+        }
+
+        return this;
+    }
+
+    /**
+     * Listens to a {@code Progress}, receiving a callback when the {@code Progress} is closed, i.e.
+     * it wont receive any more messages. If the {@code Progress} is already closed, the callback
+     * will be called immediately.
+     *
+     * @param listener the listener
+     * @return the progress for chaining
+     */
+    public synchronized Progress<T> onClose(CloseListener listener) {
+        if (hasCloseListener) {
+            throw new AlreadyAddedCloseListenerException(this, listener);
+        }
+
+        hasCloseListener = true;
+
+        if (listener != null) {
+            if (isClosed) {
+                listener.close();
+            } else {
+                this.closeListener = listener;
+            }
         }
 
         return this;
@@ -193,6 +225,12 @@ public class Progress<T> {
     public static class AlreadyAddedListenerException extends IllegalStateException {
         public AlreadyAddedListenerException(Progress progress, Listener listener) {
             super("Cannot add listener " + listener + " because progress " + progress + " already has a listener");
+        }
+    }
+
+    public static class AlreadyAddedCloseListenerException extends IllegalStateException {
+        public AlreadyAddedCloseListenerException(Progress progress, CloseListener listener) {
+            super("Cannot add close listener " + listener + " because progress " + progress + " already has a close listener");
         }
     }
 }

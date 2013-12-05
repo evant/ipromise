@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4;
 
 import me.tatarka.ipromise.Chain;
 import me.tatarka.ipromise.Channel;
+import me.tatarka.ipromise.CloseListener;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Map;
 import me.tatarka.ipromise.Progress;
@@ -176,5 +177,25 @@ public class TestProgress {
         channel.close();
         progress.listen(listener);
         verify(listener).receive("message");
+    }
+
+    @Test
+    public void testCloseListenerBefore() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        CloseListener listener = mock(CloseListener.class);
+        progress.onClose(listener);
+        channel.close();
+        verify(listener).close();
+    }
+
+    @Test
+    public void testCloseListenerAfter() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        CloseListener listener = mock(CloseListener.class);
+        channel.close();
+        progress.onClose(listener);
+        verify(listener).close();
     }
 }
