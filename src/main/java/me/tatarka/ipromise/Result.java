@@ -1,6 +1,6 @@
 package me.tatarka.ipromise;
 
-import java.util.Objects;
+import me.tatarka.ipromise.compat.Objects;
 
 /**
  * An immutable result from a promise. The result can be of either type success, error, or canceled.

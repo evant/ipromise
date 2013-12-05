@@ -7,7 +7,7 @@ package me.tatarka.ipromise;
  *
  * @param <T> the type of a message
  */
-public class Channel<T> implements AutoCloseable {
+public class Channel<T> {
     private Progress<T> progress;
 
     public Channel() {
@@ -38,7 +38,6 @@ public class Channel<T> implements AutoCloseable {
         progress.deliver(message);
     }
 
-    @Override
     public void close() {
         if (progress != null) {
             progress.close();

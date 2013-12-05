@@ -97,6 +97,7 @@ public class Progress<T> {
         cancelToken.cancel();
         messageBuffer.clear();
         listener = null;
+        closeListener = null;
     }
 
     /**
