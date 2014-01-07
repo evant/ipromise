@@ -197,10 +197,10 @@ public Promise<Integer> mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
 	final Deferred<Integer> deferred = new Deferred<Integer>(cancelToken);
 	new Thread(new Runnable() {
-		int total = 0;
-		for (int i = 0; i < BAZZILION; i++) {
+		long total = 0;
+		for (long i = 0; i < BAZZILION; i++) {
 			if (cancelToken.isCanceled()) break;
-			total += i // Do some hard work
+			total += i; // Do some hard work
 		}
 		deferred.resolve(total);
 	}).start();
