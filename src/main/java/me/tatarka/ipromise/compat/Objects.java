@@ -97,7 +97,6 @@ public final class Objects {
      * @param values the values to be hashed
      * @return a hash value of the sequence of input values
      * @see Arrays#hashCode(Object[])
-     * @see List#hashCode
      */
     public static int hash(Object... values) {
         return Arrays.hashCode(values);
