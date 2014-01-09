@@ -2,15 +2,17 @@ package me.tatarka.ipromise;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A promise is a way to return a result the will be fulfilled sometime in the future. This fixes
  * the inversion of control that callback-style functions creates and restores the composeability of
  * return values.
- *
+ * <p/>
  * In addition to creating a standard interface for all asynchronous functions, Promises can also
  * more-robustly handle error and cancellation situations.
- *
+ * <p/>
  * You cannot construct a {@code Promise} directly, instead you must get one from a {@link
  * Deferred}. That is, unless the result is already available.
  *
@@ -176,6 +178,121 @@ public class Promise<T> {
                 });
             }
         });
+        return newPromise;
+    }
+
+    /**
+     * Constructs a new {@code Promise} that completes after both the current and given promises
+     * complete.
+     *
+     * @param promise the other {@code Promise}
+     * @param <T2>    the type of the other {@code Promise}
+     * @return the new {@code Promise}
+     */
+    public <T2> Promise<Pair<T, T2>> and(Promise<T2> promise) {
+        return and(this, promise).then(new Map<Object[], Pair<T, T2>>() {
+            @Override
+            public Pair<T, T2> map(Object[] result) {
+                return Pair.of((T) result[0], (T2) result[1]);
+            }
+        });
+    }
+
+    /**
+     * Constructs a new {@code Promise} that completes after all the given promises complete. This
+     * method can take any number of promises; however, the returned promise is not strongly typed.
+     * Therefore, you only have 2 promises you should use {@link Promise#and(Promise)} instead.
+     *
+     * @param promises the promises
+     * @return the new {@code Promise}
+     */
+    public static Promise<Object[]> and(final Promise... promises) {
+        if (promises == null) throw new NullPointerException();
+
+        final Promise<Object[]> newPromise = new Promise<Object[]>();
+        final AtomicInteger count = new AtomicInteger();
+        final Object[] results = new Object[promises.length];
+        final Object lock = new Object();
+
+        for (int i = 0; i < promises.length; i++) {
+            final int index = i;
+            CancelToken.join(newPromise.cancelToken, promises[index].cancelToken);
+            promises[index].listen(new Listener() {
+                @Override
+                public void receive(Object result) {
+                    synchronized (lock) {
+                        results[index] = result;
+                        int done = count.incrementAndGet();
+
+                        if (done == promises.length) {
+                            newPromise.deliver(results);
+                        }
+                    }
+                }
+            });
+        }
+
+        return newPromise;
+    }
+
+    /**
+     * Constructs a new {@code Promise} that completes when either the current or given promises
+     * completes. The other promise is then canceled.
+     *
+     * @param promise the other {@code Promise}
+     * @return the new {@code Promise}
+     */
+    public Promise<T> or(final Promise<T> promise) {
+        return or(this, promise);
+    }
+
+    /**
+     * Constructs a new {@code Promise} that completes when one of the given promises completes. The
+     * rest are then canceled.
+     *
+     * @param promises the promises
+     * @param <T>      the type of the promises
+     * @return the new {@code Promise}
+     */
+    public static <T> Promise<T> or(final Promise<T>... promises) {
+        if (promises == null) throw new NullPointerException();
+
+        final Promise<T> newPromise = new Promise<T>();
+        final AtomicBoolean finished = new AtomicBoolean();
+        final AtomicInteger canceledCount = new AtomicInteger();
+
+        newPromise.cancelToken.listen(new CancelToken.Listener() {
+            @Override
+            public void canceled() {
+                for (Promise<T> promise : promises) promise.cancel();
+            }
+        });
+
+        for (int i = 0; i < promises.length; i++) {
+            final int index = i;
+            // We can't just join cancel tokens here because the new promise should only cancel if
+            // all of the given promises are canceled.
+            promises[index].cancelToken.listen(new CancelToken.Listener() {
+                @Override
+                public void canceled() {
+                    int count = canceledCount.incrementAndGet();
+                    if (count == promises.length) newPromise.cancel();
+                }
+            });
+
+            promises[index].listen(new Listener<T>() {
+                @Override
+                public void receive(T result) {
+                    if (!finished.getAndSet(true)) {
+                        newPromise.deliver(result);
+                        for (int j = 0; j < promises.length; j++) {
+                            if (index != j) promises[j].cancel();
+                        }
+                    }
+                }
+            });
+        }
+
         return newPromise;
     }
 

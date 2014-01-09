@@ -8,6 +8,7 @@ import me.tatarka.ipromise.Chain;
 import me.tatarka.ipromise.Deferred;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Map;
+import me.tatarka.ipromise.Pair;
 import me.tatarka.ipromise.Promise;
 
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -151,5 +152,49 @@ public class TestPromise {
 
         verify(listener, never()).receive(result);
         assertThat(promise1.isCanceled()).isTrue();
+    }
+
+    @Test
+    public void testPromiseAnd() {
+        Deferred<String> deferred1 = new Deferred<String>();
+        Promise<String> promise1 = deferred1.promise();
+        final Deferred<Integer> deferred2 = new Deferred<Integer>();
+        final Promise<Integer> promise2 = deferred2.promise();
+        String result1 = "success1";
+        Integer result2 = 0;
+        Listener listener = mock(Listener.class);
+        promise1.and(promise2).listen(listener);
+        deferred1.resolve(result1);
+        deferred2.resolve(result2);
+
+        verify(listener).receive(Pair.of(result1, result2));
+    }
+
+    @Test
+    public void testPromiseOrFirst() {
+        Deferred<String> deferred1 = new Deferred<String>();
+        Promise<String> promise1 = deferred1.promise();
+        final Deferred<String> deferred2 = new Deferred<String>();
+        final Promise<String> promise2 = deferred2.promise();
+        String result1 = "success1";
+        Listener listener = mock(Listener.class);
+        promise1.or(promise2).listen(listener);
+        deferred1.resolve(result1);
+
+        verify(listener).receive(result1);
+    }
+
+    @Test
+    public void testPromiseOrSecond() {
+        Deferred<String> deferred1 = new Deferred<String>();
+        Promise<String> promise1 = deferred1.promise();
+        final Deferred<String> deferred2 = new Deferred<String>();
+        final Promise<String> promise2 = deferred2.promise();
+        String result2 = "success2";
+        Listener listener = mock(Listener.class);
+        promise1.or(promise2).listen(listener);
+        deferred2.resolve(result2);
+
+        verify(listener).receive(result2);
     }
 }
