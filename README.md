@@ -153,6 +153,39 @@ public Promise<Result<MyResult, Error>> asyncWithPromise(Arg arg) {
 }
 ```
 
+You can also use a `Task` to easily run code in a seperate thread and return a `Proimse`.
+```java
+// Runs in a seperate thread 
+public Proimse<MyResult> async() {
+  return Task.run(new Do<MyResult>() {
+    @Override
+    public MyResult run(CancelToken cancelToken) {
+      return sync();
+    }
+  });
+}
+
+// Handles exceptions 
+public Promise<Result<MyResult, Error>> asyncError() {
+  return Task.run(new DoFailable<MyResult, Error>() {
+    @Override
+    public MyResult runFailable(CancelToken cancelToken) thows Error {
+      return syncThatThrows();
+    }
+  });
+}
+
+// Interrupts the thread when you call proimse.cancel()
+public Proimse<MyResult> asyncWithCancel() {
+  return CancelableTask.run(new Do<MyResult>() {
+    @Override
+    public MyResult run(CancelToken cancelToken) {
+      return sync();
+    }
+  });
+}
+```
+
 Progress
 --------
 If you have to return multiple results over time, you can use a `Progress` instead of a `Promise`. Note that a `Progress` can only have one listener.
