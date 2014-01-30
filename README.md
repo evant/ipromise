@@ -169,7 +169,7 @@ public Proimse<MyResult> async() {
 public Promise<Result<MyResult, Error>> asyncError() {
   return Task.run(new DoFailable<MyResult, Error>() {
     @Override
-    public MyResult runFailable(CancelToken cancelToken) thows Error {
+    public MyResult runFailable(CancelToken cancelToken) throws Error {
       return syncThatThrows();
     }
   });
@@ -185,6 +185,8 @@ public Proimse<MyResult> asyncWithCancel() {
   });
 }
 ```
+
+You can also pass an `Executor` to a `Task` for more control.
 
 Progress
 --------
