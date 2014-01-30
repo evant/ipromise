@@ -108,7 +108,7 @@ public class Promise<T> {
      * @return the result if the promise has finished
      * @throws NotFinishedException if the promise has not isFinished the result yet.
      */
-    public synchronized T get() throws NotFinishedException {
+    public synchronized T tryGet() throws NotFinishedException {
         if (isFinished) {
             return result;
         } else {

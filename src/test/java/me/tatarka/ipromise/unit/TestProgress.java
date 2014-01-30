@@ -4,9 +4,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.util.Arrays;
+
 import me.tatarka.ipromise.Chain;
 import me.tatarka.ipromise.Channel;
 import me.tatarka.ipromise.CloseListener;
+import me.tatarka.ipromise.Filters;
+import me.tatarka.ipromise.Folds;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Map;
 import me.tatarka.ipromise.Progress;
@@ -197,5 +201,49 @@ public class TestProgress {
         channel.close();
         progress.onClose(listener);
         verify(listener).close();
+    }
+
+    @Test
+    public void testFilter() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        Listener listener = mock(Listener.class);
+        progress.then(Filters.equal("good")).listen(listener);
+        channel.send("bad");
+        channel.send("good");
+        verify(listener, never()).receive("bad");
+        verify(listener).receive("good");
+    }
+
+    @Test
+    public void testFold() {
+        Channel<Integer> channel = new Channel<Integer>();
+        Progress<Integer>  progress = channel.progress();
+        Listener listener = mock(Listener.class);
+        progress.then(0, Folds.sumInt()).listen(listener);
+        channel.send(1);
+        channel.send(2);
+        channel.send(3);
+        verify(listener).receive(1);
+        verify(listener).receive(3);
+        verify(listener).receive(6);
+    }
+
+    @Test
+    public void testBatch() {
+        Channel<String> channel = new Channel<String>();
+        Progress<String> progress = channel.progress();
+        Listener listener = mock(Listener.class);
+        progress.batch(2).listen(listener);
+        channel.send("one");
+        channel.send("two");
+        channel.send("three");
+        channel.send("four");
+        channel.send("five");
+        channel.close();
+        verify(listener).receive(Arrays.asList("one", "two"));
+        verify(listener).receive(Arrays.asList("three", "four"));
+        verify(listener).receive(Arrays.asList("three", "four"));
+        verify(listener).receive(Arrays.asList("five"));
     }
 }

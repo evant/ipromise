@@ -2,6 +2,7 @@ package me.tatarka.ipromise;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -44,9 +45,13 @@ public class Progress<T> {
      *
      * @param messages the messages to send
      */
-    public Progress(List<T> messages) {
+    public Progress(Iterable<T> messages) {
         this.cancelToken = new CancelToken();
-        messageBuffer = new ArrayList<T>(messages);
+        messageBuffer = new ArrayList<T>();
+        for (T message : messages) {
+            messageBuffer.add(message);
+        }
+        isClosed = true;
     }
 
     /**
@@ -182,6 +187,12 @@ public class Progress<T> {
                 newProgress.deliver(map.map(message));
             }
         });
+        onClose(new CloseListener() {
+            @Override
+            public void close() {
+                newProgress.close();
+            }
+        });
         return newProgress;
     }
 
@@ -205,6 +216,93 @@ public class Progress<T> {
                         newProgress.deliver(message);
                     }
                 });
+            }
+        });
+        return newProgress;
+    }
+
+    public synchronized Progress<T> then(final Filter<T> filter) {
+        final Progress<T> newProgress = new Progress<T>(cancelToken);
+        listen(new Listener<T>() {
+            @Override
+            public void receive(T result) {
+               if (filter.filter(result)) newProgress.deliver(result);
+            }
+        });
+        onClose(new CloseListener() {
+            @Override
+            public void close() {
+                newProgress.close();
+            }
+        });
+        return newProgress;
+    }
+
+    public synchronized <T2> Progress<T2> then(final T2 start, final Fold<T, T2> fold) {
+        final Progress<T2> newProgress =new Progress<T2>(cancelToken);
+        final T2[] accumulator = (T2[]) new Object[] { start };
+        listen(new Listener<T>() {
+            @Override
+            public void receive(T result) {
+                accumulator[0] = fold.fold(accumulator[0], result);
+                newProgress.deliver(accumulator[0]);
+            }
+        });
+        onClose(new CloseListener() {
+            @Override
+            public void close() {
+                newProgress.close();
+            }
+        });
+        return newProgress;
+    }
+
+    public synchronized Progress<T> then(final Fold<T, T> fold) {
+        final Progress<T> newProgress = new Progress<T>(cancelToken);
+        final T[] accumulator = (T[]) new Object[] { null };
+        final boolean[] started = new boolean[] { false };
+        listen(new Listener<T>() {
+            @Override
+            public void receive(T result) {
+                if (started[0]) {
+                    accumulator[0] = fold.fold(accumulator[0], result);
+                    newProgress.deliver(accumulator[0]);
+                } else {
+                    accumulator[0] = result;
+                    started[0] = true;
+                }
+            }
+        });
+        onClose(new CloseListener() {
+            @Override
+            public void close() {
+                newProgress.close();
+            }
+        });
+        return newProgress;
+    }
+
+    public synchronized Progress<List<T>> batch(final int size) {
+        final Progress<List<T>> newProgress = new Progress<List<T>>(cancelToken);
+        final List<T> batchedItems = new ArrayList<T>();
+        listen(new Listener<T>() {
+            @Override
+            public void receive(T result) {
+                batchedItems.add(result);
+                if (batchedItems.size() >= size) {
+                    newProgress.deliver(new ArrayList<T>(batchedItems));
+                    batchedItems.clear();
+                }
+            }
+        });
+        onClose(new CloseListener() {
+            @Override
+            public void close() {
+                if (!batchedItems.isEmpty()) {
+                    newProgress.deliver(new ArrayList<T>(batchedItems));
+                    batchedItems.clear();
+                }
+                newProgress.close();
             }
         });
         return newProgress;
