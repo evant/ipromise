@@ -9,10 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A promise is a way to return a result the will be fulfilled sometime in the future. This fixes
  * the inversion of control that callback-style functions creates and restores the composeability of
  * return values.
- *
+ * <p/>
  * In addition to creating a standard interface for all asynchronous functions, Promises can also
  * more-robustly handle error and cancellation situations.
- *
+ * <p/>
  * You cannot construct a {@code Promise} directly, instead you must get one from a {@link
  * Deferred}. That is, unless the result is already available.
  *
@@ -52,6 +52,15 @@ public class Promise<T> {
         cancelToken = new CancelToken();
         this.result = result;
         isFinished = true;
+    }
+
+    /**
+     * Returns the promise's {@link me.tatarka.ipromise.CancelToken}.
+     *
+     * @return the cancel token
+     */
+    public CancelToken cancelToken() {
+        return cancelToken;
     }
 
     /**
@@ -315,7 +324,7 @@ public class Promise<T> {
      */
     public static class AlreadyDeliveredException extends IllegalStateException {
         public AlreadyDeliveredException(Promise promise, Object result) {
-            super(result + " cannot be isFinished because " + promise.result + " has already been isFinished.");
+            super(result + " cannot be delivered because " + promise.result + " has already been delivered.");
         }
     }
 

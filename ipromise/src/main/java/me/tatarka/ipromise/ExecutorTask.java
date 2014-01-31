@@ -11,8 +11,6 @@ import java.util.concurrent.Executors;
 public class ExecutorTask<T> implements Task<T> {
     protected Executor executor;
     protected Task.Do<T> callback;
-    protected CancelToken cancelToken;
-    protected Deferred<T> deferred;
 
     /**
      * Constructs a new {@code Task} that will run the given callback in a separate thread.
@@ -30,23 +28,15 @@ public class ExecutorTask<T> implements Task<T> {
      * @param callback the callback
      */
     public ExecutorTask(Executor executor, Task.Do<T> callback) {
-        cancelToken = new CancelToken();
-        deferred = new Deferred<T>(cancelToken);
         this.executor = executor;
         this.callback = callback;
     }
 
-    /**
-     * Returns the {@link me.tatarka.ipromise.Promise}
-     *
-     * @return the promise.
-     */
-    public Promise<T> promise() {
-        return deferred.promise();
-    }
-
     @Override
     public Promise<T> start() {
+        final CancelToken cancelToken = new CancelToken();
+        final Deferred<T> deferred = new Deferred<T>(cancelToken);
+
         executor.execute(new Runnable() {
             @Override
             public void run() {

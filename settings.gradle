@@ -1,1 +1,2 @@
+include ':ipromise-android', ':ipromise', ':ipromise-android-example'
 rootProject.name = 'ipromise'
