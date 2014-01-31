@@ -1,37 +1,40 @@
 package me.tatarka.ipromise.android.example;
 
-import android.os.Looper;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
+import me.tatarka.ipromise.Async;
 import me.tatarka.ipromise.CancelToken;
-import me.tatarka.ipromise.Listener;
+import me.tatarka.ipromise.Channel;
+import me.tatarka.ipromise.Progress;
 import me.tatarka.ipromise.Task;
 import me.tatarka.ipromise.Tasks;
-import me.tatarka.ipromise.android.PromiseCallback;
-import me.tatarka.ipromise.android.PromiseManager;
+import me.tatarka.ipromise.android.AsyncCallback;
+import me.tatarka.ipromise.android.AsyncManager;
 
 public class MainActivity extends ActionBarActivity {
     private static final String SLEEP_TASK_INIT = "sleep_task_init";
     private static final String SLEEP_TASK_RESTART = "sleep_task_restart";
+    private static final String PROGRESS_TASK = "progress_task";
 
-    PromiseManager promiseManager;
+    AsyncManager asyncManager;
     ProgressBar progressLaunch;
     Button buttonLaunch;
     ProgressBar progressInit;
     Button buttonInit;
     ProgressBar progressRestart;
     Button buttonRestart;
+    ProgressBar progressProgress;
+    Button buttonProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        promiseManager = PromiseManager.get(this);
+        asyncManager = AsyncManager.get(this);
 
         setContentView(R.layout.activity_main);
 
@@ -41,9 +44,11 @@ public class MainActivity extends ActionBarActivity {
         buttonInit = (Button) findViewById(R.id.button_init);
         progressRestart = (ProgressBar) findViewById(R.id.progress_restart);
         buttonRestart = (Button) findViewById(R.id.button_restart);
+        progressProgress = (ProgressBar) findViewById(R.id.progress_progress);
+        buttonProgress = (Button) findViewById(R.id.button_progress);
 
         // Start a launch
-        promiseManager.init(Tasks.of(sleep), new PromiseCallback<String>() {
+        asyncManager.init(Tasks.of(sleep), new AsyncCallback<String>() {
             @Override
             public void start() {
                 progressLaunch.setVisibility(View.VISIBLE);
@@ -59,7 +64,7 @@ public class MainActivity extends ActionBarActivity {
         });
 
         // Init on button press
-        promiseManager.listen(SLEEP_TASK_INIT, new PromiseCallback<String>() {
+        asyncManager.listen(SLEEP_TASK_INIT, new AsyncCallback<String>() {
             @Override
             public void start() {
                 progressInit.setVisibility(View.VISIBLE);
@@ -77,12 +82,12 @@ public class MainActivity extends ActionBarActivity {
         buttonInit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                promiseManager.init(SLEEP_TASK_INIT, Tasks.of(sleep));
+                asyncManager.init(SLEEP_TASK_INIT, Tasks.of(sleep));
             }
         });
 
         // Restart on button press
-        promiseManager.listen(SLEEP_TASK_RESTART, new PromiseCallback<String>() {
+        asyncManager.listen(SLEEP_TASK_RESTART, new AsyncCallback<String>() {
             @Override
             public void start() {
                 progressRestart.setVisibility(View.VISIBLE);
@@ -101,7 +106,36 @@ public class MainActivity extends ActionBarActivity {
         buttonRestart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                promiseManager.restart(SLEEP_TASK_RESTART, Tasks.of(sleep));
+                asyncManager.restart(SLEEP_TASK_RESTART, Tasks.of(sleep));
+            }
+        });
+
+        // Progress on button press
+        asyncManager.listen(PROGRESS_TASK, new AsyncCallback<Integer>() {
+            @Override
+            public void start() {
+                buttonProgress.setEnabled(false);
+                progressProgress.setProgress(0);
+            }
+
+            @Override
+            public void receive(Integer result) {
+                progressProgress.setProgress(result);
+                if (result == 100) {
+                    buttonProgress.setEnabled(true);
+                }
+            }
+        });
+
+        buttonProgress.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                asyncManager.restart(PROGRESS_TASK, new Task<Integer>() {
+                    @Override
+                    public Async<Integer> start() {
+                        return countProgress();
+                    }
+                });
             }
         });
     }
@@ -123,4 +157,25 @@ public class MainActivity extends ActionBarActivity {
             return "Promise completed!";
         }
     };
+
+    private static Progress<Integer> countProgress() {
+        final CancelToken cancelToken = new CancelToken();
+        final Channel<Integer> channel = new Channel<Integer>(cancelToken);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i <= 100; i++) {
+                    if (cancelToken.isCanceled()) return;
+                    channel.send(i);
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                channel.close();
+            }
+        }).start();
+        return channel.progress();
+    }
 }

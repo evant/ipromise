@@ -75,4 +75,28 @@
                 tools:visibility="visible"
                 />
     </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/button_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Restart Progress on Button Press"
+            />
+
+        <ProgressBar
+            android:id="@+id/progress_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|bottom"
+            style="?android:progressBarStyleHorizontal"
+            android:visibility="invisible"
+            tools:visibility="visible"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            />
+    </FrameLayout>
 </LinearLayout>

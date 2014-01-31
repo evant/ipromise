@@ -7,10 +7,10 @@ import android.support.v4.app.Fragment;
 import java.util.HashMap;
 import java.util.Map;
 
-import me.tatarka.ipromise.Promise;
+import me.tatarka.ipromise.Async;
 
-public class PromiseManagerSupportFragment extends Fragment implements IPromiseManager {
-    private Map<String, Promise> promises = new HashMap<String, Promise>();
+public class AsyncManagerSupportFragment extends Fragment implements IAsyncManager {
+    private Map<String, Async> async = new HashMap<String, Async>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -22,24 +22,23 @@ public class PromiseManagerSupportFragment extends Fragment implements IPromiseM
     public void onDestroy() {
         super.onDestroy();
         cancelAll();
-        promises.clear();
+        async.clear();
     }
 
     @Override
-    public <T> Promise<T> get(String tag) {
-        return promises.get(tag);
+    public <T> Async<T> get(String tag) {
+        return async.get(tag);
     }
 
     @Override
-    public void put(String tag, Promise<?> promise) {
-        promises.put(tag, promise);
-
+    public void put(String tag, Async<?> async) {
+        this.async.put(tag, async);
     }
 
     @Override
     public void cancelAll() {
-        for (Promise promise : promises.values()) {
-            promise.cancel();
+        for (Async async : this.async.values()) {
+            async.cancel();
         }
     }
 }

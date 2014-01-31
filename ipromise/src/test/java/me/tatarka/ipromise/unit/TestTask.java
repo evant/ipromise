@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4;
 import java.util.concurrent.Executor;
 
 import me.tatarka.ipromise.CancelToken;
-import me.tatarka.ipromise.ExecutorTask;
+import me.tatarka.ipromise.PromiseExecutorTask;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Promise;
 import me.tatarka.ipromise.Result;
@@ -57,7 +57,7 @@ public class TestTask {
     public void testCancelRun() {
         final String result = "result";
         final CancelToken.Listener cancelListener = mock(CancelToken.Listener.class);
-        ExecutorTask<String> task = Tasks.of(sameThreadExecutor, new Task.Do<String>() {
+        PromiseExecutorTask<String> task = Tasks.of(sameThreadExecutor, new Task.Do<String>() {
             @Override
             public String run(CancelToken cancelToken) {
                 cancelToken.listen(cancelListener);

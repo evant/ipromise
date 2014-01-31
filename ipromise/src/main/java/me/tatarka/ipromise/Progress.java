@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @param <T> the type of the message
  */
-public class Progress<T> {
+public class Progress<T> implements Async<T> {
     private CancelToken cancelToken;
     private List<T> messageBuffer;
     private Listener<T> listener;
@@ -63,6 +63,10 @@ public class Progress<T> {
         this(Arrays.asList(messages));
     }
 
+    public CancelToken cancelToken() {
+        return cancelToken;
+    }
+
     /**
      * Delivers a message to the progress. This is used internally by {@link Channel}.
      *
@@ -97,6 +101,7 @@ public class Progress<T> {
      * Progresses that share the {@link CancelToken}. A canceled {@code Progress} will ignore all
      * subsequent messages.
      */
+    @Override
     public synchronized void cancel() {
         cancelToken.cancel();
         messageBuffer.clear();
@@ -113,6 +118,15 @@ public class Progress<T> {
         return cancelToken.isCanceled();
     }
 
+    @Override
+    public synchronized boolean isRunning() {
+        return !isClosed  && !isCanceled();
+    }
+
+    public synchronized boolean isClosed() {
+        return isClosed;
+    }
+
     /**
      * Listens to a {@code Progress}, receiving messages as they are delivered. Messages are
      * buffered until a {@link Listener} is added, so that none are missed. Only one listener may be
@@ -122,6 +136,7 @@ public class Progress<T> {
      * @return the progress for chaining
      * @throws IllegalStateException when a listener has already been added
      */
+    @Override
     public synchronized Progress<T> listen(Listener<T> listener) {
         if (hasListener) {
             throw new AlreadyAddedListenerException(this, listener);

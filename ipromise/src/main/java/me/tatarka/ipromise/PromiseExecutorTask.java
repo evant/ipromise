@@ -8,16 +8,16 @@ import java.util.concurrent.Executors;
  *
  * @param <T> the result type
  */
-public class ExecutorTask<T> implements Task<T> {
+public class PromiseExecutorTask<T> implements PromiseTask<T> {
     protected Executor executor;
-    protected Task.Do<T> callback;
+    protected Do<T> callback;
 
     /**
      * Constructs a new {@code Task} that will run the given callback in a separate thread.
      *
      * @param callback the callback
      */
-    public ExecutorTask(Task.Do<T> callback) {
+    public PromiseExecutorTask(Do<T> callback) {
         this(Executors.newSingleThreadExecutor(), callback);
     }
 
@@ -27,7 +27,7 @@ public class ExecutorTask<T> implements Task<T> {
      * @param executor the executor to run the callback
      * @param callback the callback
      */
-    public ExecutorTask(Executor executor, Task.Do<T> callback) {
+    public PromiseExecutorTask(Executor executor, Do<T> callback) {
         this.executor = executor;
         this.callback = callback;
     }

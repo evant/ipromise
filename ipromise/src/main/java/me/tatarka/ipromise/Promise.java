@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Evan Tatarka
  * @see Deferred
  */
-public class Promise<T> {
+public class Promise<T> implements Async<T> {
     private CancelToken cancelToken;
     private List<Listener<T>> listeners = new ArrayList<Listener<T>>();
     private T result;
@@ -85,6 +85,7 @@ public class Promise<T> {
      * Cancels the {@code Promise}, notifying all listeners and propagating the cancellation to all
      * Promises that share the {@link CancelToken}.
      */
+    @Override
     public synchronized void cancel() {
         if (!isFinished) {
             listeners.clear();
@@ -111,6 +112,15 @@ public class Promise<T> {
     }
 
     /**
+     * Returns if the promise is running and does not yet hold a result
+     * @return true if runnnig, false otherwise
+     */
+    @Override
+    public synchronized boolean isRunning() {
+        return !isFinished && !isCanceled();
+    }
+
+    /**
      * Returns the result if the promise has finished. Use {@link Promise#isFinished()} to ensure
      * the result has been isFinished.
      *
@@ -133,6 +143,7 @@ public class Promise<T> {
      * @param listener the listener to call when the promise completes
      * @return the promise for chaining
      */
+    @Override
     public synchronized Promise<T> listen(Listener<T> listener) {
         if (listener == null) return this;
 
