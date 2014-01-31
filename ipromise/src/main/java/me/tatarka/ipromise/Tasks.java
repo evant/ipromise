@@ -27,6 +27,7 @@ public final class Tasks {
      * in the returned {@link me.tatarka.ipromise.Promise}. This is equivalent to: {@code
      * Task.of(executor, callback).start()}.
      *
+     * @param executor the executor used to run the callback
      * @param callback the callback
      * @param <T>      the result type
      * @return the promise that will deliver the result

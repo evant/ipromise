@@ -31,7 +31,7 @@ android {
 
 dependencies {
     compile 'com.android.support:appcompat-v7:+'
-    compile 'me.tatarka.ipromise:ipromise:1.0-SNAPSHOT'
+    compile project(':ipromise')
 }
 
 group = 'me.tatarka.ipromise'
