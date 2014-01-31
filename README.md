@@ -348,19 +348,16 @@ public clas MyActivity extends Activity {
     findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        promiseManager.restart(MY_TASK, new MyPromiseTask());
+        promiseManager.restart(MY_TASK, new Task<String> {
+          @Override
+          public Promise<String> start() {
+            return doAsyncWork();
+          }
+        });
       }
     }
   }
-
-  // It is important that this does not have a reference to surrounding Activity
-  // to prevent memory leaks
-  private static class MyPromiseTask extends Task<String> {
-    @Override
-    public Promise<String> start() {
-      return doAsyncWork();
-    }
-  };
+}
 }
 ```
 
