@@ -174,16 +174,6 @@ public Promise<Result<MyResult, Error>> asyncError() {
     }
   });
 }
-
-// Interrupts the thread when you call proimse.cancel()
-public Proimse<MyResult> asyncWithCancel() {
-  return Tasks.runCancelable(new Do<MyResult>() {
-    @Override
-    public MyResult run(CancelToken cancelToken) {
-      return sync();
-    }
-  });
-}
 ```
 
 You can also pass an `Executor` to a `Task` for more control.
