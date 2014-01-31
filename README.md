@@ -7,6 +7,13 @@ providing a uniform interface and by turning callback style into the same return
 style of synchronous code. You can view the javadoc at
 http://evant.github.com/ipromise
 
+- [Usage](#usage)
+- [Implementing Promises](#implementing-promises)
+- [Progress](#progress)
+- [Cancellation](#cancellation)
+- [Android](#android)
+- [A Note on Memory Usage](#a-note-on-memory-usage)
+
 Usage
 -----
 You can turn this:
