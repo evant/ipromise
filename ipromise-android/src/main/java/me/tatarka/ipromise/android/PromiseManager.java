@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.app.FragmentActivity;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,11 +18,13 @@ import me.tatarka.ipromise.Promise;
 import me.tatarka.ipromise.Task;
 
 public class PromiseManager {
+    public static final String DEFAULT = PromiseManager.class.getCanonicalName() + "_default";
     private static final String FRAGMENT_TAG = PromiseManager.class.getCanonicalName() + "_fragment";
 
-    private final IPromiseManager manager;
+    private final WeakReference<IPromiseManager> manager;
     private final Handler handler;
     private final Map<String, PromiseCallback> callbacks = new HashMap<String, PromiseCallback>();
+    private boolean defaultUsed;
 
     public static PromiseManager get(FragmentActivity activity) {
         PromiseManagerSupportFragment fragment = (PromiseManagerSupportFragment) activity.getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG);
@@ -62,48 +65,83 @@ public class PromiseManager {
     }
 
     private PromiseManager(IPromiseManager manager) {
-        this.manager = manager;
+        this.manager = new WeakReference<IPromiseManager>(manager);
         this.handler = new Handler(Looper.getMainLooper());
     }
 
+    private void put(String tag, Promise<?> promise) {
+        IPromiseManager m = manager.get();
+        if (m != null) {
+            m.put(tag, promise);
+        } else {
+            callbacks.clear();
+        }
+    }
+
+    private <T> Promise<T> get(String tag) {
+        IPromiseManager m = manager.get();
+        if (m != null) {
+            return m.get(tag);
+        } else {
+            callbacks.clear();
+            return null;
+        }
+    }
+
     public <T> void init(String tag, Task<T> task) {
-        Promise<T> promise = manager.get(tag);
+        Promise<T> promise = get(tag);
         if (promise == null) {
             promise = task.start();
-            manager.put(tag, promise);
+            put(tag, promise);
         }
         setupCallback(tag, promise);
     }
 
+    public <T> void init(Task<T> task) {
+        init(DEFAULT, task);
+    }
+
     public <T> void init(String tag, Task<T> task, PromiseCallback<T> callback) {
-        init(tag, task);
         listen(tag, callback);
+        init(tag, task);
+    }
+
+    public <T> void init(Task<T> task, PromiseCallback<T> callback) {
+        init(DEFAULT, task, callback);
     }
 
     public <T> void restart(String tag, Task<T> task) {
-        Promise<T> promise = manager.get(tag);
+        Promise<T> promise = get(tag);
         if (promise != null) {
             promise.cancel();
         }
         promise = task.start();
-        manager.put(tag, promise);
+        put(tag, promise);
         setupCallback(tag, promise);
     }
 
-    public <T> void restart(String tag, Task<T> task, PromiseCallback<T> callback) {
-        restart(tag, task);
-        listen(tag, callback);
+    public <T> void restart(Task<T> task) {
+        restart(DEFAULT, task);
     }
 
     public <T> void listen(String tag, final PromiseCallback<T> callback) {
-        Promise<T> promise = manager.get(tag);
+        Promise<T> promise = get(tag);
         callbacks.put(tag, callback);
         if (promise != null) {
             setupCallback(tag, promise);
         }
     }
 
+    public <T> void listen(PromiseCallback<T> callback) {
+        listen(DEFAULT, callback);
+    }
+
     private <T> void setupCallback(final String tag, final Promise<T> promise) {
+        if (!(promise.isFinished() || promise.isCanceled())) {
+            PromiseCallback<T> callback = callbacks.get(tag);
+            if (callback != null) callback.start();
+        }
+
         promise.listen(new Listener<T>() {
             @Override
             public void receive(final T result) {
@@ -132,11 +170,11 @@ public class PromiseManager {
     }
 
     public boolean contains(String tag) {
-        return manager.get(tag) != null;
+        return get(tag) != null;
     }
 
     public boolean cancel(String tag) {
-        Promise promise = manager.get(tag);
+        Promise promise = get(tag);
         if (promise != null) {
             promise.cancel();
             return true;
@@ -145,11 +183,15 @@ public class PromiseManager {
     }
 
     public boolean isRunning(String tag) {
-        Promise promise = manager.get(tag);
+        Promise promise = get(tag);
         return promise != null && !(promise.isFinished() || promise.isCanceled());
     }
 
     public void cancelAll() {
-        manager.cancelAll();
+        IPromiseManager m = manager.get();
+        if (m != null) {
+            m.cancelAll();
+        }
+        callbacks.clear();
     }
 }

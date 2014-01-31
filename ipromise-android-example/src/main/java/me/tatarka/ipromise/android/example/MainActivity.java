@@ -17,7 +17,6 @@ import me.tatarka.ipromise.android.PromiseCallback;
 import me.tatarka.ipromise.android.PromiseManager;
 
 public class MainActivity extends ActionBarActivity {
-    private static final String SLEEP_TASK_LAUNCH = "sleep_task_launch";
     private static final String SLEEP_TASK_INIT = "sleep_task_init";
     private static final String SLEEP_TASK_RESTART = "sleep_task_restart";
 
@@ -44,7 +43,13 @@ public class MainActivity extends ActionBarActivity {
         buttonRestart = (Button) findViewById(R.id.button_restart);
 
         // Start a launch
-        promiseManager.init(SLEEP_TASK_LAUNCH, Tasks.of(sleep), new PromiseCallback<String>() {
+        promiseManager.init(Tasks.of(sleep), new PromiseCallback<String>() {
+            @Override
+            public void start() {
+                progressLaunch.setVisibility(View.VISIBLE);
+                buttonLaunch.setEnabled(false);
+            }
+
             @Override
             public void receive(String result) {
                 progressLaunch.setVisibility(View.INVISIBLE);
@@ -53,13 +58,14 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-        if (promiseManager.isRunning(SLEEP_TASK_LAUNCH)) {
-            progressLaunch.setVisibility(View.VISIBLE);
-            buttonLaunch.setEnabled(false);
-        }
-
         // Init on button press
         promiseManager.listen(SLEEP_TASK_INIT, new PromiseCallback<String>() {
+            @Override
+            public void start() {
+                progressInit.setVisibility(View.VISIBLE);
+                buttonInit.setEnabled(false);
+            }
+
             @Override
             public void receive(String result) {
                 progressInit.setVisibility(View.INVISIBLE);
@@ -68,22 +74,22 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-        if (promiseManager.isRunning(SLEEP_TASK_INIT)) {
-            progressInit.setVisibility(View.VISIBLE);
-            buttonInit.setEnabled(false);
-        }
-
         buttonInit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                progressInit.setVisibility(View.VISIBLE);
-                buttonInit.setEnabled(false);
                 promiseManager.init(SLEEP_TASK_INIT, Tasks.of(sleep));
             }
         });
 
         // Restart on button press
         promiseManager.listen(SLEEP_TASK_RESTART, new PromiseCallback<String>() {
+            @Override
+            public void start() {
+                progressRestart.setVisibility(View.VISIBLE);
+                buttonRestart.setEnabled(false);
+                buttonRestart.setText("Restart on Button Press");
+            }
+
             @Override
             public void receive(String result) {
                 progressRestart.setVisibility(View.INVISIBLE);
@@ -92,17 +98,9 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-        if (promiseManager.isRunning(SLEEP_TASK_RESTART)) {
-            progressRestart.setVisibility(View.VISIBLE);
-            buttonRestart.setEnabled(false);
-        }
-
         buttonRestart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                progressRestart.setVisibility(View.VISIBLE);
-                buttonRestart.setText("Restart on Button Press");
-                buttonRestart.setEnabled(false);
                 promiseManager.restart(SLEEP_TASK_RESTART, Tasks.of(sleep));
             }
         });
