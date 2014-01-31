@@ -10,11 +10,6 @@ buildscript {
 apply plugin: 'android-library'
 apply plugin: 'android-maven'
 
-repositories {
-    mavenCentral()
-    mavenLocal()
-}
-
 android {
     compileSdkVersion 18
     buildToolsVersion "19.0.1"

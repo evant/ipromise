@@ -9,7 +9,7 @@ import java.util.Map;
 
 import me.tatarka.ipromise.Promise;
 
-class PromiseManagerSupportFragment extends Fragment implements IPromiseManager {
+public class PromiseManagerSupportFragment extends Fragment implements IPromiseManager {
     private Map<String, Promise> promises = new HashMap<String, Promise>();
 
     @Override

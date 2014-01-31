@@ -1,5 +1,16 @@
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'github-pages'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.ajoberstar:gradle-git:0.6.3'
+    }
+}
 
 dependencies {
     testCompile 'junit:junit:4.11'
@@ -13,3 +24,12 @@ version = '1.0-SNAPSHOT'
 
 targetCompatibility=1.6
 sourceCompatibility=1.6
+
+githubPages {
+    repoUri = 'git@github.com:evant/ipromise.git'
+    pages {
+        from(javadoc.outputs.files) {
+            into '.'
+        }
+    }
+}

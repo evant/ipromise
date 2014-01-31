@@ -12,7 +12,7 @@ import java.util.Map;
 import me.tatarka.ipromise.Promise;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-class PromiseManagerFragment extends Fragment implements IPromiseManager {
+public class PromiseManagerFragment extends Fragment implements IPromiseManager {
     private Map<String, Promise> promises = new HashMap<String, Promise>();
 
     @Override
