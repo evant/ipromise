@@ -157,7 +157,7 @@ You can also use a `Task` to easily run code in a seperate thread and return a `
 ```java
 // Runs in a seperate thread 
 public Proimse<MyResult> async() {
-  return Task.run(new Do<MyResult>() {
+  return Tasks.run(new Do<MyResult>() {
     @Override
     public MyResult run(CancelToken cancelToken) {
       return sync();
@@ -167,7 +167,7 @@ public Proimse<MyResult> async() {
 
 // Handles exceptions 
 public Promise<Result<MyResult, Error>> asyncError() {
-  return Task.run(new DoFailable<MyResult, Error>() {
+  return Tasks.run(new DoFailable<MyResult, Error>() {
     @Override
     public MyResult runFailable(CancelToken cancelToken) throws Error {
       return syncThatThrows();
@@ -177,7 +177,7 @@ public Promise<Result<MyResult, Error>> asyncError() {
 
 // Interrupts the thread when you call proimse.cancel()
 public Proimse<MyResult> asyncWithCancel() {
-  return CancelableTask.run(new Do<MyResult>() {
+  return Tasks.runCancelable(new Do<MyResult>() {
     @Override
     public MyResult run(CancelToken cancelToken) {
       return sync();
