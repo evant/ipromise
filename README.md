@@ -277,7 +277,7 @@ tricky. Loaders improve this, but fall short in many situations and have a
 cluncky api. Instead, you can use the `PromiseManager`. It will handle Activity
 destruction, configuration changes, and posting results to the UI thread.
 
-If you just want to load date in the backround and show it on screen when you
+If you just want to load data in the backround and show it on screen when you
 are done, it is incredibly easy.
 ```java
 public class MyActivity extends Activity {
@@ -315,7 +315,50 @@ public class MyActivity extends Activity {
 }
 ```
 
-You can see more examples on how to use `PromiseManager` in `ipromse-android-example`
+Loading/Reloading on a button press is similarly easy
+```java
+public clas MyActivity extends Activity {
+  // You can pass a tag to the PromiseManager to allow multiple tasks/callbacks
+  // If you don't pass one, PromiseManager.DEFAULT is used.
+  private static final String MY_TASK = "my_task"
+
+  private PromiseManager promiseManager;
+
+  public void onCreate(Bundle savedInstanceState) {
+    promiseManager = PromiseManager.get(this);
+    promiseManager.listen(MY_TASK, new PromiseCallback<String>() {
+      @Override
+      public void start() {
+        findViewById(R.id.progress).setVisibility(View.VISIBLE);
+      }
+
+      @Override
+      public void receive(String result) {
+        findViewById(R.id.progress).setVisibility(View.INVISIBLE);
+      }
+    });
+
+    findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        promiseManager.restart(MY_TASK, new MyPromiseTask());
+      }
+    }
+  }
+
+  // It is important that this does not have a reference to surrounding Activity
+  // to prevent memory leaks
+  private static class MyPromiseTask extends Task<String> {
+    @Override
+    public Promise<String> start() {
+      return doAsyncWork();
+    }
+  };
+}
+```
+
+You can see more examples on how to use `PromiseManager` in
+`ipromse-android-example`
 
 A Note on Memory Usage
 ----------------------
