@@ -1,6 +1,11 @@
 ipromise
 ======
-Writing asynchronous code can quickly become painful, especially when you need to make multiple calls, due to each method taking it's own callback and having it's own idea of error handling and cancellation. Promises alleviate this by providing a uniform interface and by turning callback style into the same return style of synchronous code. You can view the javadoc at http://evant.github.com/ipromise
+Writing asynchronous code can quickly become painful, especially when you need
+to make multiple calls, due to each method taking it's own callback and having
+it's own idea of error handling and cancellation. Promises alleviate this by
+providing a uniform interface and by turning callback style into the same return
+style of synchronous code. You can view the javadoc at
+http://evant.github.com/ipromise
 
 Usage
 -----
@@ -33,7 +38,9 @@ async1(arg).then(new Chain<MyResult1, Promise<MyResult2>>() {
 	}
 });
 ```
-See how it reads nice and sequentially instead of further and further indentations? If that doesn't look like a huge improvement to you, lets add some error checking. After all, `async1()` and `async2()` may fail.
+See how it reads nice and sequentially instead of heavily indented?  If that
+doesn't look like a huge improvement to you, lets add some error checking. After
+all, `async1()` and `async2()` may fail.
 
 ```java
 async1(arg, new Callback1() {
@@ -56,7 +63,8 @@ async1(arg, new Callback1() {
 	}
 }
 ```
-See how the error handling is all over the place? And you would have duplicate code if your error handling in both places was the same.
+See how the error handling is all over the place? And you would have duplicate
+code if your error handling in both places was the same.
 ```java
 async1(arg).then(new Result.ChainPromise<MyResult1, MyResult2, Error>() {
 	@Override
@@ -74,7 +82,8 @@ async1(arg).then(new Result.ChainPromise<MyResult1, MyResult2, Error>() {
 	}
 });
 ```
-Much nicer! Now lets say the user decides they don't want to wait anymore and cancels the action.
+Much nicer! Now lets say the user decides they don't want to wait anymore and
+cancels the action.
 ```java
 // The library I'm using doesn't have a way to cancel method calls :(
 boolean isCanceled = false;
@@ -127,11 +136,13 @@ public void userCancel() {
 	promise.cancel(); // That's it!
 }
 ```
-And if the library does support cancellation of methods, it can just listen for a cancellation on the promise.
+And if the library does support cancellation of methods, it can just listen for
+a cancellation on the promise.
 
 Implementing Promises
 ---------------------
-So you have lots of code lying around that uses callbacks? Wrapping it up is super easy.
+So you have lots of code lying around that uses callbacks? Wrapping it up is
+super easy.
 ```java
 public void asyncWithCallback(Arg arg, Callback callback) {
 	...
@@ -153,7 +164,8 @@ public Promise<Result<MyResult, Error>> asyncWithPromise(Arg arg) {
 }
 ```
 
-You can also use a `Task` to easily run code in a seperate thread and return a `Proimse`.
+You can also use a `Task` to easily run code in a seperate thread and return a
+`Proimse`.
 ```java
 // Runs in a seperate thread 
 public Proimse<MyResult> async() {
@@ -180,7 +192,8 @@ You can also pass an `Executor` to a `Task` for more control.
 
 Progress
 --------
-If you have to return multiple results over time, you can use a `Progress` instead of a `Promise`. Note that a `Progress` can only have one listener.
+If you have to return multiple results over time, you can use a `Progress`
+instead of a `Promise`. Note that a `Progress` can only have one listener.
 
 ```java
 Progress<Integer> progress = asyncProgress();
@@ -192,7 +205,9 @@ progress.listen(new Progress.Listener<Integer>() {
 });
 ```
 
-Like using `Deferred` with `Promise`, you use `Channel` with `Progress`. Unlike `Promise` however, you need to make sure you close your `Channel` when you are done sending messages.
+Like using `Deferred` with `Promise`, you use `Channel` with `Progress`. Unlike
+`Promise` however, you need to make sure you close your `Channel` when you are
+done sending messages.
 ```java
 public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
     final Channel<Result<MyProgress, Error>> channel = new Channel<Result<MyProgress, Error>>();
@@ -216,7 +231,8 @@ public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
 
 Cancellation
 ------------
-If you have or want to create async methods that support cancellation, you need to use a `CancelToken`. This ensures the cancel propagates to all Promises.
+If you have or want to create async methods that support cancellation, you need
+to use a `CancelToken`. This ensures the cancel propagates to all Promises.
 ```java
 public Promise<Integer> mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
@@ -254,12 +270,71 @@ public Promise<MyResult> yourSuperSlowMethod() {
 ```
 A `Progress` can be canceled the same way.
 
+Android
+-------
+Managing the Activity lifecycle in Android with asynchronous calls can be very
+tricky. Loaders improve this, but fall short in many situations and have a
+cluncky api. Instead, you can use the `PromiseManager`. It will handle Activity
+destruction, configuration changes, and posting results to the UI thread.
+
+If you just want to load date in the backround and show it on screen when you
+are done, it is incredibly easy.
+```java
+public class MyActivity extends Activity {
+  private PromiseManager promiseManager;
+
+  public void onCreate(Bundle savedInstanceState) {
+    promiseManager = PromiseManager.get(this);
+    promiseManager.init(Task.of(mySlowTask), new PromiseCallback<String>() {
+      @Override
+      public void start() {
+        // This is where you would show your progress indicator. This is called
+        // when the promise starts, and on configuration change if the promise
+        // hasn't completed.
+        findViewById(R.id.progress).setVisibility(View.VISIBLE);
+      }
+
+      @Override
+      public void receive(String result) {
+        // This is where you will get your result. This is called when the
+        // promise completes on configuration changes if the promise has
+        // completed.
+        findViewById(R.id.progress).setVisibility(View.INVISIBLE);
+      }
+    });
+  }
+
+  // It is important that this does not have a reference to surrounding Activity
+  // to prevent memory leaks
+  private static Task.Do<String> mySlowTask = new Task.Do<String>() {
+    @Override
+    public String run(CancelToken cancelToken) {
+      return doSomeSlowWork();
+    }
+  };
+}
+```
+
+You can see more examples on how to use `PromiseManager` in `ipromse-android-example`
+
 A Note on Memory Usage
 ----------------------
-Both `Promise` and `Progress` keep internal state about their results so that you can attach a listener at any time. This however can make it easy to leak memory.
+Both `Promise` and `Progress` keep internal state about their results so that
+you can attach a listener at any time. This however can make it easy to leak
+memory.
 
-A `Promise` will store it's result forever. If this result is potentially very large, make sure that you don't keep a reference to the `Proimse` arround after the result is recieved. This could be made tricky by the fact that `Deferred` keeps a reference its `Promise`. For that reason, async code should never hold a refernce to `Defererd` longer than required.
+A `Promise` will store it's result forever. If this result is potentially very
+large, make sure that you don't keep a reference to the `Proimse` arround after
+the result is recieved. This could be made tricky by the fact that `Deferred`
+keeps a reference its `Promise`. For that reason, async code should never hold a
+refernce to `Defererd` longer than required.
 
-A `Progress` will buffer messages until a listener is attached. This means you must always call either `listen()` or `cancel()` on a `Progress`.
+A `Progress` will buffer messages until a listener is attached. This means you
+must always call either `listen()` or `cancel()` on a `Progress`.
 
-Also remember that anonymous inner classes (which you are probably using for callbacks) will keep a reference to their outer class even if you don't reference anything from it. This means that the outer class will not be garbage collected until the `Promise` completes or the `Channel` for a `Progress` is closed. The easiest way arround this is to call `cancel()` on the `Promise` or `Progress` when it's no longer needed.
+Also remember that anonymous inner classes (which you are probably using for
+callbacks) will keep a reference to their outer class even if you don't
+reference anything from it. This means that the outer class will not be garbage
+collected until the `Promise` completes or the `Channel` for a `Progress` is
+closed. The easiest way arround this is to call `cancel()` on the `Promise` or
+`Progress` when it's no longer needed.
