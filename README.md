@@ -200,7 +200,8 @@ You can also pass an `Executor` to a `Task` for more control.
 Progress
 --------
 If you have to return multiple results over time, you can use a `Progress`
-instead of a `Promise`. Note that a `Progress` can only have one listener.
+instead of a `Promise`. Note that a `Progress` can only have one listener at a
+time.
 
 ```java
 Progress<Integer> progress = asyncProgress();
@@ -281,18 +282,18 @@ Android
 -------
 Managing the Activity lifecycle in Android with asynchronous calls can be very
 tricky. Loaders improve this, but fall short in many situations and have a
-cluncky api. Instead, you can use the `PromiseManager`. It will handle Activity
+cluncky api. Instead, you can use the `AsyncManager`. It will handle Activity
 destruction, configuration changes, and posting results to the UI thread.
 
 If you just want to load data in the backround and show it on screen when you
 are done, it is incredibly easy.
 ```java
 public class MyActivity extends Activity {
-  private PromiseManager promiseManager;
+  private AsyncManager asyncManager;
 
   public void onCreate(Bundle savedInstanceState) {
-    promiseManager = PromiseManager.get(this);
-    promiseManager.init(Task.of(mySlowTask), new PromiseCallback<String>() {
+    asyncManager = AsyncManager.get(this);
+    asyncManager.init(Task.of(mySlowTask), new AsyncAdapter<String>() {
       @Override
       public void start() {
         // This is where you would show your progress indicator. This is called
@@ -322,18 +323,19 @@ public class MyActivity extends Activity {
 }
 ```
 
-Loading/Reloading on a button press is similarly easy
+Loading/Reloading on a button press is similarly easy. Try doing that with
+loaders!
 ```java
 public clas MyActivity extends Activity {
   // You can pass a tag to the PromiseManager to allow multiple tasks/callbacks
   // If you don't pass one, PromiseManager.DEFAULT is used.
   private static final String MY_TASK = "my_task"
 
-  private PromiseManager promiseManager;
+  private AsyncManager asyncManager;
 
   public void onCreate(Bundle savedInstanceState) {
-    promiseManager = PromiseManager.get(this);
-    promiseManager.listen(MY_TASK, new PromiseCallback<String>() {
+    asyncManager = AsyncManager.get(this);
+    asyncManager.listen(MY_TASK, new AsyncAdapter<String>() {
       @Override
       public void start() {
         findViewById(R.id.progress).setVisibility(View.VISIBLE);
@@ -348,7 +350,7 @@ public clas MyActivity extends Activity {
     findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        promiseManager.restart(MY_TASK, new Task<String> {
+        asyncAdapter.restart(MY_TASK, new Task<String> {
           @Override
           public Promise<String> start() {
             return doAsyncWork();
@@ -361,7 +363,7 @@ public clas MyActivity extends Activity {
 }
 ```
 
-You can see more examples on how to use `PromiseManager` in
+You can see more examples on how to use `AsyncManager` in
 `ipromse-android-example`
 
 A Note on Memory Usage
