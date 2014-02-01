@@ -16,6 +16,7 @@ public class TestProgressBufferMemory {
         Channel<TestMessage> channel = new Channel<TestMessage>();
         Progress<TestMessage> progress = channel.progress();
         channel.send(message);
+        channel.send(null); // Make sure message is not last one, as that one is preserved
         progress.listen(new Listener<TestMessage>() {
             @Override
             public void receive(TestMessage result) {
@@ -32,6 +33,7 @@ public class TestProgressBufferMemory {
         Channel<TestMessage> channel = new Channel<TestMessage>();
         Progress<TestMessage> progress = channel.progress();
         channel.send(message);
+        channel.send(null); // Make sure message is not last one, as that one is preserved
         progress.listen(null);
         MemoryLeakVerifier verifier = new MemoryLeakVerifier(message);
         message = null;

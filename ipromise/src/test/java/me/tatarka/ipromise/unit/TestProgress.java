@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4;
 
 import java.util.Arrays;
 
+import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.Chain;
 import me.tatarka.ipromise.Channel;
 import me.tatarka.ipromise.CloseListener;
@@ -126,35 +127,39 @@ public class TestProgress {
         verify(listener).receive(result2.length() + 1);
     }
 
-    @Test(expected = Progress.AlreadyAddedListenerException.class)
-    public void testErrorOnTwoListeners() {
+    public void testDeliverLastResultOnNewListener() {
         Channel<String> channel = new Channel<String>();
         Progress<String> progress = channel.progress();
+        String result1 = "result1";
+        String result2 = "result2";
+        Listener listener = mock(Listener.class);
         progress.listen(new Listener<String>() {
             @Override
             public void receive(String result) {
 
             }
         });
-        progress.listen(new Listener<String>() {
-            @Override
-            public void receive(String result) {
+        channel.send(result1);
+        channel.send(result1);
+        progress.listen(listener);
 
-            }
-        });
+        verify(listener, never()).receive(result1);
+        verify(listener).receive(result2);
     }
 
-    @Test(expected = Progress.AlreadyAddedListenerException.class)
     public void testNullCountsAsListener() {
         Channel<String> channel = new Channel<String>();
         Progress<String> progress = channel.progress();
+        String result1 = "result1";
+        String result2 = "result2";
+        Listener listener = mock(Listener.class);
         progress.listen(null);
-        progress.listen(new Listener<String>() {
-            @Override
-            public void receive(String result) {
+        channel.send(result1);
+        channel.send(result1);
+        progress.listen(listener);
 
-            }
-        });
+        verify(listener, never()).receive(result1);
+        verify(listener).receive(result2);
     }
 
     @Test(expected = Channel.ClosedChannelException.class)
