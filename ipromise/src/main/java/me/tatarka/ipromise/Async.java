@@ -7,6 +7,6 @@ package me.tatarka.ipromise;
  */
 public interface Async<T> {
     Async<T> listen(Listener<T> listener);
-    void cancel();
     boolean isRunning();
+    CancelToken cancelToken();
 }

@@ -7,16 +7,19 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import me.tatarka.ipromise.Async;
 import me.tatarka.ipromise.CancelToken;
+import me.tatarka.ipromise.CloseListener;
+import me.tatarka.ipromise.Closeable;
 import me.tatarka.ipromise.Listener;
-import me.tatarka.ipromise.Progress;
-import me.tatarka.ipromise.Promise;
 import me.tatarka.ipromise.Task;
 
 public class AsyncManager {
@@ -26,6 +29,7 @@ public class AsyncManager {
     private final WeakReference<IAsyncManager> manager;
     private final Handler handler;
     private final Map<String, AsyncCallback> callbacks = new HashMap<String, AsyncCallback>();
+    private final Map<String, PendingCallback> pendingCallbacks = new HashMap<String, PendingCallback>();
 
     public static AsyncManager get(FragmentActivity activity) {
         AsyncManagerSupportFragment fragment = (AsyncManagerSupportFragment) activity.getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG);
@@ -89,6 +93,19 @@ public class AsyncManager {
         }
     }
 
+    public <T> void init(Task<T> task) {
+        init(DEFAULT, task);
+    }
+
+    public <T> void init(Task<T> task, AsyncCallback<T> callback) {
+        init(DEFAULT, task, callback);
+    }
+
+    public <T> void init(String tag, Task<T> task, AsyncCallback<T> callback) {
+        listen(tag, callback);
+        init(tag, task);
+    }
+
     public <T> void init(String tag, Task<T> task) {
         Async<T> async = get(tag);
         if (async == null) {
@@ -99,23 +116,14 @@ public class AsyncManager {
         setupCallback(tag, async);
     }
 
-    public <T> void init(Task<T> task) {
-        init(DEFAULT, task);
-    }
-
-    public <T> void init(String tag, Task<T> task, AsyncCallback<T> callback) {
-        listen(tag, callback);
-        init(tag, task);
-    }
-
-    public <T> void init(Task<T> task, AsyncCallback<T> callback) {
-        init(DEFAULT, task, callback);
+    public <T> void restart(Task<T> task) {
+        restart(DEFAULT, task);
     }
 
     public <T> void restart(String tag, Task<T> task) {
         Async<T> async = get(tag);
         if (async != null) {
-            async.cancel();
+            async.cancelToken().cancel();
         }
         async = task.start();
         put(tag, async);
@@ -123,70 +131,73 @@ public class AsyncManager {
         setupCallback(tag, async);
     }
 
-    public <T> void restart(Task<T> task) {
-        restart(DEFAULT, task);
-    }
-
-    public <T> void listen(String tag, final AsyncCallback<T> callback) {
-        Async<T> async = get(tag);
-        callbacks.put(tag, callback);
-        if (async != null) {
-            setupCallback(tag, async);
-        }
-    }
-
     public <T> void listen(AsyncCallback<T> callback) {
         listen(DEFAULT, callback);
     }
 
-    private <T> void setupCallback(String tag, Async<T> async) {
-        if (async instanceof Promise) {
-            setupPromiseCallback(tag, (Promise<T>) async);
-        } else if (async instanceof Progress) {
-            setupProgressCallback(tag, (Progress<T>) async);
+    public <T> void listen(String tag, final AsyncCallback<T> callback) {
+        if (callbacks.containsKey(tag)) throw new IllegalArgumentException("'" + tag + "' has already been used");
+        callbacks.put(tag, callback);
+
+        PendingCallback<T> pending = pendingCallbacks.remove(tag);
+        if (pending != null) {
+            if (pending.startCalled) callback.start();
+            for (T result : pending.results) callback.receive(result);
+            if (pending.endCalled) callback.end();
+        } else {
+            Async<T> async = get(tag);
+            if (async != null) setupCallback(tag, async);
         }
     }
 
-    private <T> void setupPromiseCallback(final String tag, final Promise<T> promise) {
-        if (promise.isRunning()) {
-            AsyncCallback<T> callback = callbacks.get(tag);
+    private <T> AsyncCallback<T> getCallback(String tag) {
+        AsyncCallback<T> callback = callbacks.get(tag);
+        if (callback == null) {
+            callback = new PendingCallback<T>();
+            pendingCallbacks.put(tag, (PendingCallback) callback);
+        }
+        return callback;
+    }
+
+    private <T> void setupCallback(final String tag, final Async<T> async) {
+        AsyncCallback<T> callback = getCallback(tag);
+
+        if (async.isRunning()) {
             if (callback != null) callback.start();
+            Log.d("iPromise LOG", "callback start");
+        } else if (async instanceof Closeable && ((Closeable) async).isClosed()) {
+            if (callback != null) callback.end();
+            Log.d("iPromise LOG", "callback end");
         }
 
-        promise.listen(new Listener<T>() {
+        async.listen(new Listener<T>() {
             @Override
             public void receive(final T result) {
-                final Runnable runnable = new Runnable() {
+                runOnUI(async, new Runnable() {
                     @Override
                     public void run() {
-                        AsyncCallback<T> callback = callbacks.get(tag);
+                        AsyncCallback<T> callback = getCallback(tag);
                         if (callback != null) callback.receive(result);
+                        Log.d("iPromise LOG", "callback receive: " + result);
                     }
-                };
-
-                // Already on main thread, just call
-                if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
-                    runnable.run();
-                } else {
-                    promise.cancelToken().listen(new CancelToken.Listener() {
-                        @Override
-                        public void canceled() {
-                            handler.removeCallbacks(runnable);
-                        }
-                    });
-                    handler.post(runnable);
-                }
+                });
             }
         });
-    }
 
-    private <T> void setupProgressCallback(final String tag, final Progress<T> progress) {
-        if (progress.isRunning()) {
-            AsyncCallback<T> callback = callbacks.get(tag);
-            if (callback != null) callback.start();
-        } else if (progress.isClosed()) {
-            AsyncCallback<T> callback = callbacks.get(tag);
-            if (callback != null) callback.end();
+        if (async instanceof Closeable) {
+            ((Closeable) async).onClose(new CloseListener() {
+                @Override
+                public void close() {
+                    runOnUI(async, new Runnable() {
+                        @Override
+                        public void run() {
+                            AsyncCallback<T> callback = callbacks.get(tag);
+                            if (callback != null) callback.end();
+                            Log.d("iPromise LOG", "callback end");
+                        }
+                    });
+                }
+            });
         }
     }
 
@@ -197,7 +208,7 @@ public class AsyncManager {
     public boolean cancel(String tag) {
         Async async = get(tag);
         if (async != null) {
-            async.cancel();
+            async.cancelToken().cancel();
             return true;
         }
         return false;
@@ -208,11 +219,58 @@ public class AsyncManager {
         return async != null && async.isRunning();
     }
 
+    public boolean isClosed(String tag) {
+        Async async = get(tag);
+        return async != null && async instanceof Closeable && ((Closeable) async).isClosed();
+    }
+
+    public boolean isCanceled(String tag) {
+        Async async = get(tag);
+        return async != null && async.cancelToken().isCanceled();
+    }
+
     public void cancelAll() {
         IAsyncManager m = manager.get();
         if (m != null) {
             m.cancelAll();
         }
         callbacks.clear();
+        pendingCallbacks.clear();
+    }
+
+    private <T> void runOnUI(Async<T> async, final Runnable runnable) {
+        // Already on main thread, just call
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            runnable.run();
+        } else {
+            async.cancelToken().listen(new CancelToken.Listener() {
+                @Override
+                public void canceled() {
+                    handler.removeCallbacks(runnable);
+                }
+            });
+            handler.post(runnable);
+        }
+    }
+
+    private static class PendingCallback<T> implements AsyncCallback<T> {
+        boolean startCalled;
+        boolean endCalled;
+        List<T> results = new ArrayList<T>();
+
+        @Override
+        public void start() {
+            startCalled = true;
+        }
+
+        @Override
+        public void receive(T result) {
+            results.add(result);
+        }
+
+        @Override
+        public void end() {
+            endCalled = true;
+        }
     }
 }

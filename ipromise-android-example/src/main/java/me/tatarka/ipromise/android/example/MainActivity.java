@@ -11,8 +11,10 @@ import me.tatarka.ipromise.Async;
 import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.Channel;
 import me.tatarka.ipromise.Progress;
+import me.tatarka.ipromise.PromiseTask;
 import me.tatarka.ipromise.Task;
 import me.tatarka.ipromise.Tasks;
+import me.tatarka.ipromise.android.AsyncAdapter;
 import me.tatarka.ipromise.android.AsyncCallback;
 import me.tatarka.ipromise.android.AsyncManager;
 
@@ -48,7 +50,7 @@ public class MainActivity extends ActionBarActivity {
         buttonProgress = (Button) findViewById(R.id.button_progress);
 
         // Start a launch
-        asyncManager.init(Tasks.of(sleep), new AsyncCallback<String>() {
+        asyncManager.init(Tasks.of(sleep), new AsyncAdapter<String>() {
             @Override
             public void start() {
                 progressLaunch.setVisibility(View.VISIBLE);
@@ -64,7 +66,7 @@ public class MainActivity extends ActionBarActivity {
         });
 
         // Init on button press
-        asyncManager.listen(SLEEP_TASK_INIT, new AsyncCallback<String>() {
+        asyncManager.listen(SLEEP_TASK_INIT, new AsyncAdapter<String>() {
             @Override
             public void start() {
                 progressInit.setVisibility(View.VISIBLE);
@@ -87,7 +89,7 @@ public class MainActivity extends ActionBarActivity {
         });
 
         // Restart on button press
-        asyncManager.listen(SLEEP_TASK_RESTART, new AsyncCallback<String>() {
+        asyncManager.listen(SLEEP_TASK_RESTART, new AsyncAdapter<String>() {
             @Override
             public void start() {
                 progressRestart.setVisibility(View.VISIBLE);
@@ -111,19 +113,25 @@ public class MainActivity extends ActionBarActivity {
         });
 
         // Progress on button press
-        asyncManager.listen(PROGRESS_TASK, new AsyncCallback<Integer>() {
+        asyncManager.listen(PROGRESS_TASK, new AsyncAdapter<Integer>() {
             @Override
             public void start() {
                 buttonProgress.setEnabled(false);
                 progressProgress.setProgress(0);
+                progressProgress.setVisibility(View.VISIBLE);
             }
 
             @Override
             public void receive(Integer result) {
+                buttonProgress.setText("Progress running (" + result + ")");
                 progressProgress.setProgress(result);
-                if (result == 100) {
-                    buttonProgress.setEnabled(true);
-                }
+            }
+
+            @Override
+            public void end() {
+                buttonProgress.setText("Restart Progress on Button Press");
+                buttonProgress.setEnabled(true);
+                progressProgress.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -140,7 +148,7 @@ public class MainActivity extends ActionBarActivity {
         });
     }
 
-    private static Task.Do<String> sleep = new Task.Do<String>() {
+    private static PromiseTask.Do<String> sleep = new PromiseTask.Do<String>() {
         @Override
         public String run(CancelToken cancelToken) {
             cancelToken.listen(new CancelToken.Listener() {
@@ -164,11 +172,14 @@ public class MainActivity extends ActionBarActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                for (int i = 0; i <= 100; i++) {
-                    if (cancelToken.isCanceled()) return;
+                for (int i = 0; i <= 100; i += 10) {
+                    if (cancelToken.isCanceled()) {
+                        Log.d("iPromise LOG", "task canceled");
+                        return;
+                    }
                     channel.send(i);
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }

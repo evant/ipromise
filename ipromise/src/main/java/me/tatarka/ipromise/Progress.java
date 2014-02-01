@@ -7,17 +7,18 @@ import java.util.List;
 /**
  * A progress is a way to return multiple values over time. You cannot construct a progress
  * directly, instead you must get one from a {@link Channel}. Unlike a promise, a progress can only
- * have one listener. This is because as messages are consumed, they are no longer available.
+ * have one listener at a time. This is because as messages are consumed, they are no longer
+ * available.
  *
  * @param <T> the type of the message
  */
-public class Progress<T> implements Async<T> {
+public class Progress<T> implements Async<T>, Closeable {
     private CancelToken cancelToken;
     private List<T> messageBuffer;
+    private T lastResult;
+    private boolean hasLastResult;
     private Listener<T> listener;
-    private boolean hasListener;
     private CloseListener closeListener;
-    private boolean hasCloseListener;
     private boolean isClosed;
 
     /**
@@ -36,6 +37,16 @@ public class Progress<T> implements Async<T> {
     Progress(CancelToken cancelToken) {
         this.cancelToken = cancelToken;
         messageBuffer = new ArrayList<T>();
+        cancelToken.listen(new CancelToken.Listener() {
+            @Override
+            public void canceled() {
+                messageBuffer.clear();
+                hasLastResult = false;
+                lastResult = null;
+                listener = null;
+                closeListener = null;
+            }
+        });
     }
 
     /**
@@ -49,6 +60,10 @@ public class Progress<T> implements Async<T> {
         messageBuffer = new ArrayList<T>();
         for (T message : messages) {
             messageBuffer.add(message);
+        }
+        if (!messageBuffer.isEmpty()) {
+            lastResult = messageBuffer.get(messageBuffer.size() - 1);
+            hasLastResult = true;
         }
         isClosed = true;
     }
@@ -74,6 +89,9 @@ public class Progress<T> implements Async<T> {
      */
     synchronized void deliver(T message) {
         if (cancelToken.isCanceled()) return;
+
+        lastResult = message;
+        hasLastResult = true;
 
         if (listener != null) {
             listener.receive(message);
@@ -101,12 +119,8 @@ public class Progress<T> implements Async<T> {
      * Progresses that share the {@link CancelToken}. A canceled {@code Progress} will ignore all
      * subsequent messages.
      */
-    @Override
     public synchronized void cancel() {
         cancelToken.cancel();
-        messageBuffer.clear();
-        listener = null;
-        closeListener = null;
     }
 
     /**
@@ -120,7 +134,7 @@ public class Progress<T> implements Async<T> {
 
     @Override
     public synchronized boolean isRunning() {
-        return !isClosed  && !isCanceled();
+        return !isClosed && !isCanceled();
     }
 
     public synchronized boolean isClosed() {
@@ -129,27 +143,25 @@ public class Progress<T> implements Async<T> {
 
     /**
      * Listens to a {@code Progress}, receiving messages as they are delivered. Messages are
-     * buffered until a {@link Listener} is added, so that none are missed. Only one listener may be
-     * added.
+     * buffered until a {@link Listener} is added, so that none are missed. If there was already a
+     * listener added, the new listener will replace it and receive only the last result given to
+     * the {@code Promise}.
      *
      * @param listener the listener to call when the progress receives a message
      * @return the progress for chaining
-     * @throws IllegalStateException when a listener has already been added
      */
     @Override
     public synchronized Progress<T> listen(Listener<T> listener) {
-        if (hasListener) {
-            throw new AlreadyAddedListenerException(this, listener);
-        }
-
-        hasListener = true;
-
-        if (listener != null) {
-            for (T message : messageBuffer) {
-                listener.receive(message);
+        if (!messageBuffer.isEmpty()) {
+            if (listener != null) {
+                for (T message : messageBuffer) {
+                    listener.receive(message);
+                }
             }
+            messageBuffer.clear();
+        } else if (hasLastResult) {
+            if (listener != null) listener.receive(lastResult);
         }
-        messageBuffer.clear();
 
         if (!isClosed) {
             this.listener = listener;
@@ -161,18 +173,13 @@ public class Progress<T> implements Async<T> {
     /**
      * Listens to a {@code Progress}, receiving a callback when the {@code Progress} is closed, i.e.
      * it wont receive any more messages. If the {@code Progress} is already closed, the callback
-     * will be called immediately.
+     * will be called immediately. If this method is called multiple times, only the latest {@link
+     * me.tatarka.ipromise.CloseListener} will be called.
      *
      * @param listener the listener
      * @return the progress for chaining
      */
     public synchronized Progress<T> onClose(CloseListener listener) {
-        if (hasCloseListener) {
-            throw new AlreadyAddedCloseListenerException(this, listener);
-        }
-
-        hasCloseListener = true;
-
         if (listener != null) {
             if (isClosed) {
                 listener.close();
@@ -240,7 +247,7 @@ public class Progress<T> implements Async<T> {
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {
-               if (filter.filter(result)) newProgress.deliver(result);
+                if (filter.filter(result)) newProgress.deliver(result);
             }
         });
         onClose(new CloseListener() {
@@ -253,8 +260,8 @@ public class Progress<T> implements Async<T> {
     }
 
     public synchronized <T2> Progress<T2> then(final T2 start, final Fold<T, T2> fold) {
-        final Progress<T2> newProgress =new Progress<T2>(cancelToken);
-        final T2[] accumulator = (T2[]) new Object[] { start };
+        final Progress<T2> newProgress = new Progress<T2>(cancelToken);
+        final T2[] accumulator = (T2[]) new Object[]{start};
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {
@@ -273,8 +280,8 @@ public class Progress<T> implements Async<T> {
 
     public synchronized Progress<T> then(final Fold<T, T> fold) {
         final Progress<T> newProgress = new Progress<T>(cancelToken);
-        final T[] accumulator = (T[]) new Object[] { null };
-        final boolean[] started = new boolean[] { false };
+        final T[] accumulator = (T[]) new Object[]{null};
+        final boolean[] started = new boolean[]{false};
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {

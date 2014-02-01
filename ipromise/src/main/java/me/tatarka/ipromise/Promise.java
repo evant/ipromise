@@ -40,6 +40,14 @@ public class Promise<T> implements Async<T> {
      */
     Promise(CancelToken cancelToken) {
         this.cancelToken = cancelToken;
+        cancelToken.listen(new CancelToken.Listener() {
+            @Override
+            public void canceled() {
+                if (!isFinished) {
+                    listeners.clear();
+                }
+            }
+        });
     }
 
     /**
@@ -85,12 +93,8 @@ public class Promise<T> implements Async<T> {
      * Cancels the {@code Promise}, notifying all listeners and propagating the cancellation to all
      * Promises that share the {@link CancelToken}.
      */
-    @Override
     public synchronized void cancel() {
-        if (!isFinished) {
-            listeners.clear();
-            cancelToken.cancel();
-        }
+        cancelToken.cancel();
     }
 
     /**

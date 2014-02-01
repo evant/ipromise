@@ -42,7 +42,7 @@ public class AsyncManagerFragment extends Fragment implements IAsyncManager {
     @Override
     public void cancelAll() {
         for (Async async : this.async.values()) {
-            async.cancel();
+            async.cancelToken().cancel();
         }
     }
 }
