@@ -351,7 +351,7 @@ public class MyActivity extends Activity {
   public void onCreate(Bundle savedInstanceState) {
     // If you are using the support library, use AsyncManagerCompat.get(this)
     asyncManager = AsyncManager.get(this);
-    asyncManager.init(Task.of(mySlowTask), new AsyncAdapter<String>() {
+    asyncManager.start(Task.of(mySlowTask), new AsyncAdapter<String>() {
       @Override
       public void start() {
         // This is where you would show your progress indicator. This is called
@@ -393,27 +393,31 @@ public clas MyActivity extends Activity {
 
   public void onCreate(Bundle savedInstanceState) {
     asyncManager = AsyncManager.get(this);
-    asyncManager.listen(MY_TASK, new AsyncAdapter<String>() {
-      @Override
-      public void start() {
-        findViewById(R.id.progress).setVisibility(View.VISIBLE);
-      }
+    final AsyncItem buttonAsync = asyncManager.add(
+      MY_TASK, 
+      new Task<String>() {
+        @Override
+        public Promise<String> start() {
+          return doAsyncWork();
+        }
+      },
+      new AsyncAdapter<String>() {
+        @Override
+        public void start() {
+          findViewById(R.id.progress).setVisibility(View.VISIBLE);
+        }
 
-      @Override
-      public void receive(String result) {
-        findViewById(R.id.progress).setVisibility(View.INVISIBLE);
+        @Override
+        public void receive(String result) {
+          findViewById(R.id.progress).setVisibility(View.INVISIBLE);
+        }
       }
-    });
+    );
 
     findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        asyncAdapter.restart(MY_TASK, new Task<String> {
-          @Override
-          public Promise<String> start() {
-            return doAsyncWork();
-          }
-        });
+        buttonAsync.restart();
       }
     }
   }
