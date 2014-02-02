@@ -46,7 +46,6 @@ public class Channel<T> {
      * {@link me.tatarka.ipromise.Progress#RETAIN_LAST}, and {@link me.tatarka.ipromise.Progress#RETAIN_ALL}.
      *
      * @param retentionPolicy the retention policy
-     * @param cancelToken     the cancel token
      */
     public Channel(int retentionPolicy, CancelToken cancelToken) {
         progress = new Progress<T>(retentionPolicy, cancelToken);

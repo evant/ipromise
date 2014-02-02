@@ -5,7 +5,7 @@ package me.tatarka.ipromise.android;
  * to manage the display state of your Activity or Fragment based on the state of the async
  * operation. All callbacks run on the UI thread.
  *
- * @param <T> the result type
+ * @param <T>
  * @author Evan Tatarka
  */
 public interface AsyncCallback<T> {
