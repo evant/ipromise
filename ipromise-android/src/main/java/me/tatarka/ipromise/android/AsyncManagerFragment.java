@@ -11,6 +11,9 @@ import java.util.Map;
 
 import me.tatarka.ipromise.Async;
 
+/**
+ * @author Evan Tatarka
+ */
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class AsyncManagerFragment extends Fragment implements IAsyncManager {
     private Map<String, Async> async = new HashMap<String, Async>();
@@ -36,7 +39,7 @@ public class AsyncManagerFragment extends Fragment implements IAsyncManager {
 
     @Override
     public void put(String tag, Async<?> async) {
-       this.async.put(tag, async);
+        this.async.put(tag, async);
     }
 
     @Override

@@ -1,9 +1,10 @@
 package me.tatarka.ipromise.android;
 
 /**
- * User: evantatarka
- * Date: 1/31/14
- * Time: 5:42 PM
+ * An adapter for {@link me.tatarka.ipromise.android.AsyncCallback} so you don't have to implement
+ * all it's methods.
+ *
+ * @author Evan Tatarka
  */
 public abstract class AsyncAdapter<T> implements AsyncCallback<T> {
     @Override

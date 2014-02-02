@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
  * A task that uses an {@link java.util.concurrent.Executor} to run the given callback.
  *
  * @param <T> the result type
+ * @author Evan Tatarka
  */
 public class PromiseExecutorTask<T> implements PromiseTask<T> {
     protected Executor executor;

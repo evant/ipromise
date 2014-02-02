@@ -6,18 +6,34 @@ package me.tatarka.ipromise;
  * Deferred#resolve(Object)} at a later time.
  *
  * @param <T> the type of a result
+ * @author Evan Tatarka
  */
 public class Deferred<T> {
     private Promise<T> promise;
 
+    /**
+     * Constructs a new {@code Deferred}.
+     */
     public Deferred() {
         promise = new Promise<T>();
     }
 
+    /**
+     * Constructs a new {@code Deferred} with the given {@link me.tatarka.ipromise.CancelToken}.
+     * When the cancel token is canceled, this deferred's {@link me.tatarka.ipromise.Promise} is
+     * also canceled.
+     *
+     * @param cancelToken the cancel token
+     */
     public Deferred(CancelToken cancelToken) {
         promise = new Promise<T>(cancelToken);
     }
 
+    /**
+     * The deferred's {@link me.tatarka.ipromise.Promise}.
+     *
+     * @return the promise
+     */
     public Promise<T> promise() {
         return promise;
     }

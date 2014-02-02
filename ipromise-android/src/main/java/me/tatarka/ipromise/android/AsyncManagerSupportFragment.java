@@ -9,6 +9,9 @@ import java.util.Map;
 
 import me.tatarka.ipromise.Async;
 
+/**
+ * @author Evan Tatarka
+ */
 public class AsyncManagerSupportFragment extends Fragment implements IAsyncManager {
     private Map<String, Async> async = new HashMap<String, Async>();
 

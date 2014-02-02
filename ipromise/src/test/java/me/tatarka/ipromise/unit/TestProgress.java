@@ -6,12 +6,10 @@ import org.junit.runners.JUnit4;
 
 import java.util.Arrays;
 
-import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.Chain;
 import me.tatarka.ipromise.Channel;
 import me.tatarka.ipromise.CloseListener;
 import me.tatarka.ipromise.Filters;
-import me.tatarka.ipromise.Folds;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Map;
 import me.tatarka.ipromise.Progress;

@@ -1,11 +1,13 @@
 package me.tatarka.ipromise;
 
 /**
- * User: evantatarka
- * Date: 1/31/14
- * Time: 5:36 PM
+ * A {@link me.tatarka.ipromise.Task} for a {@link me.tatarka.ipromise.Promise}.
+ *
+ * @param <T> the result type
+ * @author Evan Tatarka
  */
 public interface PromiseTask<T> extends Task<T> {
+    @Override
     Promise<T> start();
 
     /**

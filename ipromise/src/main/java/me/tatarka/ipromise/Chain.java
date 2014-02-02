@@ -5,6 +5,7 @@ package me.tatarka.ipromise;
  *
  * @param <T1> the type of the original value
  * @param <T2> the type of the second value
+ * @author Evan Tatarka
  */
 public interface Chain<T1, T2> {
     T2 chain(T1 result);

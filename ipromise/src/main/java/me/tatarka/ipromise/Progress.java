@@ -9,6 +9,7 @@ import java.util.List;
  * directly, instead you must get one from a {@link Channel}.
  *
  * @param <T> the type of the message
+ * @author Evan Tatarka
  */
 public class Progress<T> implements Async<T>, Closeable {
     /**
@@ -113,6 +114,12 @@ public class Progress<T> implements Async<T>, Closeable {
         this(Arrays.asList(messages));
     }
 
+    /**
+     * The {@link me.tatarka.ipromise.CancelToken} of the {@code Progress}. When the token is
+     * canceled, this progress is canceled, and won't receive any more messages.
+     *
+     * @return the cancel token
+     */
     public CancelToken cancelToken() {
         return cancelToken;
     }
@@ -178,6 +185,12 @@ public class Progress<T> implements Async<T>, Closeable {
         return !isClosed && !isCanceled();
     }
 
+    /**
+     * Returns if the {@code Progress} is closed. A closed progress will not receive any more
+     * messages.
+     *
+     * @return true if closed, false otherwise
+     */
     public synchronized boolean isClosed() {
         return isClosed;
     }
@@ -278,6 +291,14 @@ public class Progress<T> implements Async<T>, Closeable {
         return newProgress;
     }
 
+    /**
+     * Constructs a new {@code Progress} that filters this {@code Progress}. i.e. the new {@code
+     * Progress} will not receive any messages when {@link me.tatarka.ipromise.Filter#filter(Object)}
+     * returns false.
+     *
+     * @param filter the filter
+     * @return the new {@code Progress}
+     */
     public synchronized Progress<T> then(final Filter<T> filter) {
         final Progress<T> newProgress = new Progress<T>(retentionPolicy, cancelToken);
         listen(new Listener<T>() {
@@ -295,50 +316,14 @@ public class Progress<T> implements Async<T>, Closeable {
         return newProgress;
     }
 
-    public synchronized <T2> Progress<T2> then(final T2 start, final Fold<T, T2> fold) {
-        final Progress<T2> newProgress = new Progress<T2>(retentionPolicy, cancelToken);
-        final T2[] accumulator = (T2[]) new Object[]{start};
-        listen(new Listener<T>() {
-            @Override
-            public void receive(T result) {
-                accumulator[0] = fold.fold(accumulator[0], result);
-                newProgress.deliver(accumulator[0]);
-            }
-        });
-        onClose(new CloseListener() {
-            @Override
-            public void close() {
-                newProgress.close();
-            }
-        });
-        return newProgress;
-    }
-
-    public synchronized Progress<T> then(final Fold<T, T> fold) {
-        final Progress<T> newProgress = new Progress<T>(retentionPolicy, cancelToken);
-        final T[] accumulator = (T[]) new Object[]{null};
-        final boolean[] started = new boolean[]{false};
-        listen(new Listener<T>() {
-            @Override
-            public void receive(T result) {
-                if (started[0]) {
-                    accumulator[0] = fold.fold(accumulator[0], result);
-                    newProgress.deliver(accumulator[0]);
-                } else {
-                    accumulator[0] = result;
-                    started[0] = true;
-                }
-            }
-        });
-        onClose(new CloseListener() {
-            @Override
-            public void close() {
-                newProgress.close();
-            }
-        });
-        return newProgress;
-    }
-
+    /**
+     * Constructs a new {@code Progress} that the messages of this {@code Progress}.
+     *
+     * @param size the batch's size. The new {@code Progress} will be called every time this many
+     *             messages are sent, and again with the remaining messages when the {@code
+     *             Progress} is closed.
+     * @return the new {@code Progress}
+     */
     public synchronized Progress<List<T>> batch(final int size) {
         final Progress<List<T>> newProgress = new Progress<List<T>>(retentionPolicy, cancelToken);
         final List<T> batchedItems = new ArrayList<T>();
