@@ -34,7 +34,7 @@ public class AsyncManagerSupportFragment extends Fragment implements IAsyncManag
     }
 
     @Override
-    public void put(String tag, Async<?> async) {
+    public <T> void put(String tag, Async<T> async) {
         this.async.put(tag, async);
     }
 

@@ -1,6 +1,7 @@
 package me.tatarka.ipromise.android.example;
 
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
@@ -15,6 +16,8 @@ import me.tatarka.ipromise.PromiseTask;
 import me.tatarka.ipromise.Task;
 import me.tatarka.ipromise.Tasks;
 import me.tatarka.ipromise.android.AsyncAdapter;
+import me.tatarka.ipromise.android.AsyncCallback;
+import me.tatarka.ipromise.android.AsyncItem;
 import me.tatarka.ipromise.android.AsyncManager;
 
 public class MainActivity extends ActionBarActivity {
@@ -49,100 +52,125 @@ public class MainActivity extends ActionBarActivity {
         buttonProgress = (Button) findViewById(R.id.button_progress);
 
         // Start a launch
-        asyncManager.init(Tasks.of(sleep), new AsyncAdapter<String>() {
-            @Override
-            public void start() {
-                progressLaunch.setVisibility(View.VISIBLE);
-                buttonLaunch.setEnabled(false);
-            }
+        asyncManager.start(
+                Tasks.of(sleep),
+                new AsyncAdapter<String>() {
+                    @Override
+                    public void start() {
+                        progressLaunch.setVisibility(View.VISIBLE);
+                        buttonLaunch.setEnabled(false);
+                    }
 
-            @Override
-            public void receive(String result) {
-                progressLaunch.setVisibility(View.INVISIBLE);
-                buttonLaunch.setEnabled(false);
-                buttonLaunch.setText(result + " (Launch)");
-            }
-        });
+                    @Override
+                    public void receive(String result) {
+                        progressLaunch.setVisibility(View.INVISIBLE);
+                        buttonLaunch.setEnabled(false);
+                        buttonLaunch.setText(result + " (Launch)");
+                    }
+
+                    @Override
+                    public void save(String result, Bundle outState) {
+                        outState.putString(SLEEP_TASK_INIT, result);
+                    }
+
+                    @Override
+                    public String restore(Bundle savedState) {
+                        return savedState.getString(SLEEP_TASK_INIT);
+                    }
+                }
+        );
 
         // Init on button press
-        asyncManager.listen(SLEEP_TASK_INIT, new AsyncAdapter<String>() {
-            @Override
-            public void start() {
-                progressInit.setVisibility(View.VISIBLE);
-                buttonInit.setEnabled(false);
-            }
+        final AsyncItem<String> initAsync = asyncManager.add(
+                SLEEP_TASK_INIT,
+                Tasks.of(sleep),
+                new AsyncAdapter<String>() {
+                    @Override
+                    public void start() {
+                        progressInit.setVisibility(View.VISIBLE);
+                        buttonInit.setEnabled(false);
+                    }
 
-            @Override
-            public void receive(String result) {
-                progressInit.setVisibility(View.INVISIBLE);
-                buttonInit.setEnabled(false);
-                buttonInit.setText(result + " (Init)");
-            }
-        });
+                    @Override
+                    public void receive(String result) {
+                        progressInit.setVisibility(View.INVISIBLE);
+                        buttonInit.setEnabled(false);
+                        buttonInit.setText(result + " (Init)");
+                    }
+                }
+        );
 
         buttonInit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                asyncManager.init(SLEEP_TASK_INIT, Tasks.of(sleep));
+                initAsync.start();
             }
         });
 
         // Restart on button press
-        asyncManager.listen(SLEEP_TASK_RESTART, new AsyncAdapter<String>() {
-            @Override
-            public void start() {
-                progressRestart.setVisibility(View.VISIBLE);
-                buttonRestart.setEnabled(false);
-                buttonRestart.setText("Restart on Button Press");
-            }
+        final AsyncItem<String> restartAsync = asyncManager.add(
+                SLEEP_TASK_RESTART,
+                Tasks.of(sleep),
+                new AsyncAdapter<String>() {
+                    @Override
+                    public void start() {
+                        progressRestart.setVisibility(View.VISIBLE);
+                        buttonRestart.setEnabled(false);
+                        buttonRestart.setText("Restart on Button Press");
+                    }
 
-            @Override
-            public void receive(String result) {
-                progressRestart.setVisibility(View.INVISIBLE);
-                buttonRestart.setEnabled(true);
-                buttonRestart.setText(result + " (restart)");
-            }
-        });
+                    @Override
+                    public void receive(String result) {
+                        progressRestart.setVisibility(View.INVISIBLE);
+                        buttonRestart.setEnabled(true);
+                        buttonRestart.setText(result + " (restart)");
+                    }
+                }
+        );
 
         buttonRestart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                asyncManager.restart(SLEEP_TASK_RESTART, Tasks.of(sleep));
+                restartAsync.restart();
             }
         });
 
         // Progress on button press
-        asyncManager.listen(PROGRESS_TASK, new AsyncAdapter<Integer>() {
-            @Override
-            public void start() {
-                buttonProgress.setEnabled(false);
-                progressProgress.setProgress(0);
-                progressProgress.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void receive(Integer result) {
-                buttonProgress.setText("Progress running (" + result + ")");
-                progressProgress.setProgress(result);
-            }
-
-            @Override
-            public void end() {
-                buttonProgress.setText("Restart Progress on Button Press");
-                buttonProgress.setEnabled(true);
-                progressProgress.setVisibility(View.INVISIBLE);
-            }
-        });
-
-        buttonProgress.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                asyncManager.restart(PROGRESS_TASK, new Task<Integer>() {
+        final AsyncItem<Integer> progressAsync = asyncManager.add(
+                PROGRESS_TASK,
+                new Task<Integer>() {
                     @Override
                     public Async<Integer> start() {
                         return countProgress();
                     }
-                });
+                },
+                new AsyncAdapter<Integer>() {
+                    @Override
+                    public void start() {
+                        buttonProgress.setEnabled(false);
+                        progressProgress.setProgress(0);
+                        progressProgress.setVisibility(View.VISIBLE);
+                    }
+
+                    @Override
+                    public void receive(Integer result) {
+                        buttonProgress.setText("Progress running (" + result + ")");
+                        progressProgress.setProgress(result);
+                    }
+
+                    @Override
+                    public void end() {
+                        buttonProgress.setText("Restart Progress on Button Press");
+                        buttonProgress.setEnabled(true);
+                        progressProgress.setVisibility(View.INVISIBLE);
+                    }
+                }
+        );
+
+        buttonProgress.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                progressAsync.restart();
             }
         });
     }

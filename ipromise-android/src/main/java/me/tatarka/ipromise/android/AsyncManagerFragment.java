@@ -5,11 +5,14 @@ import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 
 import me.tatarka.ipromise.Async;
+import me.tatarka.ipromise.Listener;
 
 /**
  * @author Evan Tatarka
@@ -31,14 +34,13 @@ public class AsyncManagerFragment extends Fragment implements IAsyncManager {
         async.clear();
     }
 
-
     @Override
     public <T> Async<T> get(String tag) {
         return async.get(tag);
     }
 
     @Override
-    public void put(String tag, Async<?> async) {
+    public <T> void put(String tag, Async<T> async) {
         this.async.put(tag, async);
     }
 
