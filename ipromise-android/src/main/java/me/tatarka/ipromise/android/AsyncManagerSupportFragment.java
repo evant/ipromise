@@ -10,6 +10,9 @@ import java.util.Map;
 import me.tatarka.ipromise.Async;
 
 /**
+ * Persists the task by running it in a fragment with {@code setRetainInstanceState(true)}. This is
+ * used internally by {@link me.tatarka.ipromise.android.AsyncManager}.
+ *
  * @author Evan Tatarka
  */
 public class AsyncManagerSupportFragment extends Fragment implements IAsyncManager {

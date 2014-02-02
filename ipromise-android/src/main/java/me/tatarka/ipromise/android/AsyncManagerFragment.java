@@ -17,6 +17,9 @@ import me.tatarka.ipromise.Async;
 import me.tatarka.ipromise.Listener;
 
 /**
+ * Persists the task by running it in a fragment with {@code setRetainInstanceState(true)}. This is
+ * used internally by {@link me.tatarka.ipromise.android.AsyncManager}.
+ *
  * @author Evan Tatarka
  */
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)

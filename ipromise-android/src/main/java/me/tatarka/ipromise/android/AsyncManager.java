@@ -13,6 +13,8 @@ import me.tatarka.ipromise.Task;
  * A way to manage asynchronous actions in Android that is much easier to get right than an {@link
  * android.os.AsyncTask} or a {@link android.content.Loader}. It properly handles Activity
  * destruction, configuration changes, and posting back to the UI thread.
+ *
+ * @author Evan Tatarka
  */
 public class AsyncManager {
     /**
@@ -76,34 +78,134 @@ public class AsyncManager {
         this.handler = new Handler(Looper.getMainLooper());
     }
 
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
+     * task will not be started until you call {@link AsyncItem#start()} or {@link
+     * AsyncItem#restart()}.
+     *
+     * @param tag          the task's tag. Each task for this {@code AsyncManager} must have a
+     *                     unique tag.
+     * @param task         the task
+     * @param callback     the callback
+     * @param saveCallback the save callback. This will save and restore the result if the Activity
+     *                     is destroyed and recreated.
+     * @param <T>          the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
     public <T> AsyncItem<T> add(String tag, Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
         return new AsyncItem<T>(handler, manager, tag, task, callback, saveCallback);
     }
 
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
+     * task will not be started until you call {@link AsyncItem#start()} or {@link
+     * AsyncItem#restart()}.
+     *
+     * @param task         the task
+     * @param callback     the callback
+     * @param saveCallback the save callback. This will save and restore the result if the Activity
+     *                     is destroyed and recreated.
+     * @param <T>          the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
     public <T> AsyncItem<T> add(Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
         return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, saveCallback);
     }
 
-    public <T> AsyncItem<T> start(String tag, Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
-        return new AsyncItem<T>(handler, manager, tag, task, callback, saveCallback).start();
-    }
-
-    public <T> AsyncItem<T> start(Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
-        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, saveCallback).start();
-    }
-
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
+     * task will not be started until you call {@link AsyncItem#start()} or {@link
+     * AsyncItem#restart()}.
+     *
+     * @param tag      the task's tag. Each task for this {@code AsyncManager} must have a unique
+     *                 tag.
+     * @param task     the task
+     * @param callback the callback
+     * @param <T>      the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
     public <T> AsyncItem<T> add(String tag, Task<T> task, AsyncCallback<T> callback) {
         return new AsyncItem<T>(handler, manager, tag, task, callback, null);
     }
 
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
+     * task will not be started until you call {@link AsyncItem#start()} or {@link
+     * AsyncItem#restart()}.
+     *
+     * @param task     the task
+     * @param callback the callback
+     * @param <T>      the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
     public <T> AsyncItem<T> add(Task<T> task, AsyncCallback<T> callback) {
         return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, null);
     }
 
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
+     * or a similar method. This is equivalent to calling {@code add(...).start()}
+     *
+     * @param tag          the task's tag. Each task for this {@code AsyncManager} must have a
+     *                     unique tag.
+     * @param task         the task
+     * @param callback     the callback
+     * @param saveCallback the save callback. This will save and restore the result if the Activity
+     *                     is destroyed and recreated.
+     * @param <T>          the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
+    public <T> AsyncItem<T> start(String tag, Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
+        return new AsyncItem<T>(handler, manager, tag, task, callback, saveCallback).start();
+    }
+
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
+     * or a similar method. This is equivalent to calling {@code add(...).start()}
+     *
+     * @param task         the task
+     * @param callback     the callback
+     * @param saveCallback the save callback. This will save and restore the result if the Activity
+     *                     is destroyed and recreated.
+     * @param <T>          the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
+    public <T> AsyncItem<T> start(Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
+        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, saveCallback).start();
+    }
+
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
+     * or a similar method. This is equivalent to calling {@code add(...).start()}
+     *
+     * @param tag      the task's tag. Each task for this {@code AsyncManager} must have a unique
+     *                 tag.
+     * @param task     the task
+     * @param callback the callback
+     * @param <T>      the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
     public <T> AsyncItem<T> start(String tag, Task<T> task, AsyncCallback<T> callback) {
         return new AsyncItem<T>(handler, manager, tag, task, callback, null).start();
     }
 
+    /**
+     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
+     * or a similar method. This is equivalent to calling {@code add(...).start()}
+     *
+     * @param task     the task
+     * @param callback the callback
+     * @param <T>      the result type
+     * @return the {@link me.tatarka.ipromise.android.AsyncItem}
+     */
     public <T> AsyncItem<T> start(Task<T> task, AsyncCallback<T> callback) {
         return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, null).start();
     }

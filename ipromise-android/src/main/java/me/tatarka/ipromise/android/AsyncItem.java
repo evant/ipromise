@@ -12,6 +12,12 @@ import me.tatarka.ipromise.Closeable;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Task;
 
+/**
+ * Manages a {@link me.tatarka.ipromise.Task} added to an {@link me.tatarka.ipromise.android.AsyncManager}.
+ * You can query for the task's state, and start and restart it.
+ *
+ * @param <T> the result type
+ */
 public class AsyncItem<T> {
     private Handler handler;
     private IAsyncManager manager;
@@ -42,6 +48,11 @@ public class AsyncItem<T> {
         }
     }
 
+    /**
+     * Starts the task. If the task is already started, does nothing.
+     *
+     * @return the {@code AsyncItem} for chaining
+     */
     public AsyncItem<T> start() {
         Async<T> async = manager.get(tag);
         if (async == null) {
@@ -53,6 +64,11 @@ public class AsyncItem<T> {
         return this;
     }
 
+    /**
+     * Restarts the task. If the task is already started, cancels the previously running one.
+     *
+     * @return the {@code AsyncItem} for chaining
+     */
     public AsyncItem<T> restart() {
         Async<T> async = manager.get(tag);
         if (async != null) {
@@ -66,6 +82,11 @@ public class AsyncItem<T> {
         return this;
     }
 
+    /**
+     * Cancels the task.
+     *
+     * @return true if the task was started, false otherwise
+     */
     public boolean cancel() {
         Async async = manager.get(tag);
         if (async != null) {

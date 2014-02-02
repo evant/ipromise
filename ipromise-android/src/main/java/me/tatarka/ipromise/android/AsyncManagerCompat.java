@@ -5,6 +5,12 @@ import android.support.v4.app.FragmentActivity;
 
 import static me.tatarka.ipromise.android.AsyncManager.FRAGMENT_TAG;
 
+/**
+ * Get an instance of {@link me.tatarka.ipromise.android.AsyncManager} that works with the support
+ * library.
+ *
+ * @author Evan Tatarka
+ */
 public final class AsyncManagerCompat {
     private AsyncManagerCompat() {
 

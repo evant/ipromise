@@ -5,15 +5,15 @@ package me.tatarka.ipromise.android;
  * to manage the display state of your Activity or Fragment based on the state of the async
  * operation. All callbacks run on the UI thread.
  *
- * @param <T>
+ * @param <T> the result type
  * @author Evan Tatarka
  */
 public interface AsyncCallback<T> {
     /**
-     * Called when the async operation is started with {@link me.tatarka.ipromise.android.AsyncManager#init}
-     * or {@link me.tatarka.ipromise.android.AsyncManager#restart}, or when there is a configuration
-     * change and the async operation has not completed. This is where you would change your UI
-     * state to show that an async operation is pending (e.x. show a progress bar).
+     * Called when the async operation is started with {@link AsyncItem#start()} or {@link
+     * AsyncItem#restart()}, or when there is a configuration change and the async operation has not
+     * completed. This is where you would change your UI state to show that an async operation is
+     * pending (e.x. show a progress bar).
      */
     void start();
 
