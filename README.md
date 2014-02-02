@@ -200,8 +200,7 @@ You can also pass an `Executor` to a `Task` for more control.
 Progress
 --------
 If you have to return multiple results over time, you can use a `Progress`
-instead of a `Promise`. Note that a `Progress` can only have one listener at a
-time.
+instead of a `Promise`.
 
 ```java
 Progress<Integer> progress = asyncProgress();
@@ -236,6 +235,20 @@ public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
 	return channel.progress();
 }
 ```
+
+There are various different ways to handle old messages on as `Progress` for
+this reason, the `Channel` constructor can take a retention policy. There are
+3 options.
+
+- `Progress.RETAIN_NONE` - This means that if there is no listener when a
+  a message is sent, the message is dropped.
+- `Progress.REATIN_LAST` - This means the last message is saved. This message
+  will immediatly be delivered to the listener when it is attached.
+- `Progress.REATIN_ALL` - This means all messages are saved and will be deliverd
+  to the listener when it is attached.
+
+When choosing a retention policy keep in mind that all messages saved will be
+kept in memory until the `Progress` is garbage collected.
 
 Cancellation
 ------------
@@ -378,8 +391,8 @@ the result is recieved. This could be made tricky by the fact that `Deferred`
 keeps a reference its `Promise`. For that reason, async code should never hold a
 refernce to `Defererd` longer than required.
 
-A `Progress` will buffer messages until a listener is attached. This means you
-must always call either `listen()` or `cancel()` on a `Progress`.
+A `Progress` will store messages depending on it's set retention policy. Keep in
+mind which one you choose to control your memory usage.
 
 Also remember that anonymous inner classes (which you are probably using for
 callbacks) will keep a reference to their outer class even if you don't
