@@ -7,7 +7,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ public class AsyncManager {
     public static final String DEFAULT = AsyncManager.class.getCanonicalName() + "_default";
     private static final String FRAGMENT_TAG = AsyncManager.class.getCanonicalName() + "_fragment";
 
-    private final WeakReference<IAsyncManager> manager;
+    private final IAsyncManager manager;
     private final Handler handler;
     private final Map<String, AsyncCallback> callbacks = new HashMap<String, AsyncCallback>();
     private final Map<String, PendingCallback> pendingCallbacks = new HashMap<String, PendingCallback>();
@@ -70,27 +69,16 @@ public class AsyncManager {
     }
 
     private AsyncManager(IAsyncManager manager) {
-        this.manager = new WeakReference<IAsyncManager>(manager);
+        this.manager = manager;
         this.handler = new Handler(Looper.getMainLooper());
     }
 
     private void put(String tag, Async<?> async) {
-        IAsyncManager m = manager.get();
-        if (m != null) {
-            m.put(tag, async);
-        } else {
-            callbacks.clear();
-        }
+        manager.put(tag, async);
     }
 
     private <T> Async<T> get(String tag) {
-        IAsyncManager m = manager.get();
-        if (m != null) {
-            return m.get(tag);
-        } else {
-            callbacks.clear();
-            return null;
-        }
+        return manager.get(tag);
     }
 
     public <T> void init(Task<T> task) {
@@ -159,26 +147,35 @@ public class AsyncManager {
         return callback;
     }
 
-    private <T> void setupCallback(final String tag, final Async<T> async) {
+    private <T> void setupCallback(String tag, Async<T> async) {
         AsyncCallback<T> callback = getCallback(tag);
 
         if (async.isRunning()) {
             if (callback != null) callback.start();
-            Log.d("iPromise LOG", "callback start");
         } else if (async instanceof Closeable && ((Closeable) async).isClosed()) {
             if (callback != null) callback.end();
-            Log.d("iPromise LOG", "callback end");
         }
+
+        listenCallback(this, tag, async);
+    }
+
+    private static <T> void listenCallback(AsyncManager manager, final String tag, final Async<T> async) {
+        final WeakReference<AsyncManager> managerRef = new WeakReference<AsyncManager>(manager);
 
         async.listen(new Listener<T>() {
             @Override
             public void receive(final T result) {
-                runOnUI(async, new Runnable() {
+                AsyncManager manager = managerRef.get();
+                if (manager == null) return;
+
+                runOnUI(manager.handler, async, new Runnable() {
                     @Override
                     public void run() {
-                        AsyncCallback<T> callback = getCallback(tag);
+                        AsyncManager manager = managerRef.get();
+                        if (manager == null) return;
+
+                        AsyncCallback<T> callback = manager.getCallback(tag);
                         if (callback != null) callback.receive(result);
-                        Log.d("iPromise LOG", "callback receive: " + result);
                     }
                 });
             }
@@ -188,18 +185,39 @@ public class AsyncManager {
             ((Closeable) async).onClose(new CloseListener() {
                 @Override
                 public void close() {
-                    runOnUI(async, new Runnable() {
+                    AsyncManager manager = managerRef.get();
+                    if (manager == null) return;
+
+                    runOnUI(manager.handler, async, new Runnable() {
                         @Override
                         public void run() {
-                            AsyncCallback<T> callback = callbacks.get(tag);
+                            AsyncManager manager = managerRef.get();
+                            if (manager == null) return;
+
+                            AsyncCallback<T> callback = manager.getCallback(tag);
                             if (callback != null) callback.end();
-                            Log.d("iPromise LOG", "callback end");
                         }
                     });
                 }
             });
         }
     }
+
+    private static <T> void runOnUI(final Handler handler, Async<T> async, final Runnable runnable) {
+        // Already on main thread, just call
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            runnable.run();
+        } else {
+            async.cancelToken().listen(new CancelToken.Listener() {
+                @Override
+                public void canceled() {
+                    handler.removeCallbacks(runnable);
+                }
+            });
+            handler.post(runnable);
+        }
+    }
+
 
     public boolean contains(String tag) {
         return get(tag) != null;
@@ -230,27 +248,9 @@ public class AsyncManager {
     }
 
     public void cancelAll() {
-        IAsyncManager m = manager.get();
-        if (m != null) {
-            m.cancelAll();
-        }
+        manager.cancelAll();
         callbacks.clear();
         pendingCallbacks.clear();
-    }
-
-    private <T> void runOnUI(Async<T> async, final Runnable runnable) {
-        // Already on main thread, just call
-        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
-            runnable.run();
-        } else {
-            async.cancelToken().listen(new CancelToken.Listener() {
-                @Override
-                public void canceled() {
-                    handler.removeCallbacks(runnable);
-                }
-            });
-            handler.post(runnable);
-        }
     }
 
     private static class PendingCallback<T> implements AsyncCallback<T> {
