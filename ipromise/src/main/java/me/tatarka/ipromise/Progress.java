@@ -6,45 +6,83 @@ import java.util.List;
 
 /**
  * A progress is a way to return multiple values over time. You cannot construct a progress
- * directly, instead you must get one from a {@link Channel}. Unlike a promise, a progress can only
- * have one listener at a time. This is because as messages are consumed, they are no longer
- * available.
+ * directly, instead you must get one from a {@link Channel}.
  *
  * @param <T> the type of the message
  */
 public class Progress<T> implements Async<T>, Closeable {
+    /**
+     * Don't retain any messages. Messages received before a listener is attached will be dropped.
+     */
+    public static final int RETAIN_NONE = 0;
+
+    /**
+     * Retains only the last message. When a listener is attached, it will immediately receive the
+     * last message sent. This is the default.
+     */
+    public static final int RETAIN_LAST = 1;
+
+    /**
+     * Retains all messages. When a listener is attached, it will immediately receive all messages
+     * sent up to that point. Be aware of the memory implications of keeping all messages.
+     */
+    public static final int RETAIN_ALL = 2;
+
+    private int retentionPolicy;
     private CancelToken cancelToken;
     private List<T> messageBuffer;
-    private T lastResult;
-    private boolean hasLastResult;
-    private Listener<T> listener;
-    private CloseListener closeListener;
+    private List<Listener<T>> listeners = new ArrayList<Listener<T>>();
+    private List<CloseListener> closeListeners = new ArrayList<CloseListener>();
     private boolean isClosed;
 
     /**
-     * Constructs a new progress. This is used internally by {@link Channel}.
+     * Constructs a new {@code Progress}. This is used internally by {@link Channel}.
      */
     Progress() {
-        this(new CancelToken());
+        this(RETAIN_LAST, new CancelToken());
     }
 
     /**
-     * Constructs a new progress with the given {@link CancelToken}. When the token is canceled, the
-     * progress is also canceled. This is used internally by {@link Channel}
+     * Constructs a new {@code Progress} with the given retention policy. This is used internally by
+     * {@link Channel}.
+     *
+     * @param retentionPolicy the retention policy for messages.
+     */
+    Progress(int retentionPolicy) {
+        this(retentionPolicy, new CancelToken());
+    }
+
+    /**
+     * Constructs a new {@code Progress} with the given {@link CancelToken}. When the token is
+     * canceled, the progress is also canceled. This is used internally by {@link Channel}
      *
      * @param cancelToken the cancel token
      */
     Progress(CancelToken cancelToken) {
+        this(RETAIN_LAST, cancelToken);
+    }
+
+    /**
+     * Constructs a new progress with the given retention policy and {@link CancelToken}. When the
+     * token is canceled, the progress is also canceled. This is used internally by {@link Channel}
+     *
+     * @param cancelToken the cancel token
+     */
+    Progress(int retentionPolicy, CancelToken cancelToken) {
+        this.retentionPolicy = retentionPolicy;
         this.cancelToken = cancelToken;
-        messageBuffer = new ArrayList<T>();
+
+        if (retentionPolicy == RETAIN_LAST) {
+            messageBuffer = new ArrayList<T>(1);
+        } else if (retentionPolicy == RETAIN_ALL) {
+            messageBuffer = new ArrayList<T>();
+        }
+
         cancelToken.listen(new CancelToken.Listener() {
             @Override
             public void canceled() {
-                messageBuffer.clear();
-                hasLastResult = false;
-                lastResult = null;
-                listener = null;
-                closeListener = null;
+                listeners.clear();
+                closeListeners.clear();
             }
         });
     }
@@ -56,14 +94,11 @@ public class Progress<T> implements Async<T>, Closeable {
      * @param messages the messages to send
      */
     public Progress(Iterable<T> messages) {
+        this.retentionPolicy = RETAIN_ALL;
         this.cancelToken = new CancelToken();
         messageBuffer = new ArrayList<T>();
         for (T message : messages) {
             messageBuffer.add(message);
-        }
-        if (!messageBuffer.isEmpty()) {
-            lastResult = messageBuffer.get(messageBuffer.size() - 1);
-            hasLastResult = true;
         }
         isClosed = true;
     }
@@ -90,13 +125,18 @@ public class Progress<T> implements Async<T>, Closeable {
     synchronized void deliver(T message) {
         if (cancelToken.isCanceled()) return;
 
-        lastResult = message;
-        hasLastResult = true;
-
-        if (listener != null) {
-            listener.receive(message);
-        } else {
+        if (retentionPolicy == RETAIN_LAST) {
+            if (messageBuffer.isEmpty()) {
+                messageBuffer.add(message);
+            } else {
+                messageBuffer.set(0, message);
+            }
+        } else if (retentionPolicy == RETAIN_ALL) {
             messageBuffer.add(message);
+        }
+
+        for (Listener<T> listener : listeners) {
+            listener.receive(message);
         }
     }
 
@@ -106,12 +146,13 @@ public class Progress<T> implements Async<T>, Closeable {
      */
     synchronized void close() {
         isClosed = true;
-        listener = null;
 
-        if (closeListener != null) {
-            closeListener.close();
-            closeListener = null;
+        listeners.clear();
+
+        for (CloseListener listener : closeListeners) {
+            listener.close();
         }
+        closeListeners.clear();
     }
 
     /**
@@ -152,19 +193,14 @@ public class Progress<T> implements Async<T>, Closeable {
      */
     @Override
     public synchronized Progress<T> listen(Listener<T> listener) {
-        if (!messageBuffer.isEmpty()) {
-            if (listener != null) {
-                for (T message : messageBuffer) {
-                    listener.receive(message);
-                }
+        if (listener != null && messageBuffer != null) {
+            for (T message : messageBuffer) {
+                listener.receive(message);
             }
-            messageBuffer.clear();
-        } else if (hasLastResult) {
-            if (listener != null) listener.receive(lastResult);
         }
 
         if (!isClosed) {
-            this.listener = listener;
+            listeners.add(listener);
         }
 
         return this;
@@ -184,7 +220,7 @@ public class Progress<T> implements Async<T>, Closeable {
             if (isClosed) {
                 listener.close();
             } else {
-                this.closeListener = listener;
+                closeListeners.add(listener);
             }
         }
 
@@ -225,7 +261,7 @@ public class Progress<T> implements Async<T>, Closeable {
      * @return the new {@code Progress}
      */
     public synchronized <T2> Progress<T2> then(final Chain<T, Progress<T2>> chain) {
-        final Progress<T2> newProgress = new Progress<T2>(cancelToken);
+        final Progress<T2> newProgress = new Progress<T2>(retentionPolicy, cancelToken);
         listen(new Listener<T>() {
             @Override
             public void receive(T message) {
@@ -243,7 +279,7 @@ public class Progress<T> implements Async<T>, Closeable {
     }
 
     public synchronized Progress<T> then(final Filter<T> filter) {
-        final Progress<T> newProgress = new Progress<T>(cancelToken);
+        final Progress<T> newProgress = new Progress<T>(retentionPolicy, cancelToken);
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {
@@ -260,7 +296,7 @@ public class Progress<T> implements Async<T>, Closeable {
     }
 
     public synchronized <T2> Progress<T2> then(final T2 start, final Fold<T, T2> fold) {
-        final Progress<T2> newProgress = new Progress<T2>(cancelToken);
+        final Progress<T2> newProgress = new Progress<T2>(retentionPolicy, cancelToken);
         final T2[] accumulator = (T2[]) new Object[]{start};
         listen(new Listener<T>() {
             @Override
@@ -279,7 +315,7 @@ public class Progress<T> implements Async<T>, Closeable {
     }
 
     public synchronized Progress<T> then(final Fold<T, T> fold) {
-        final Progress<T> newProgress = new Progress<T>(cancelToken);
+        final Progress<T> newProgress = new Progress<T>(retentionPolicy, cancelToken);
         final T[] accumulator = (T[]) new Object[]{null};
         final boolean[] started = new boolean[]{false};
         listen(new Listener<T>() {
@@ -304,7 +340,7 @@ public class Progress<T> implements Async<T>, Closeable {
     }
 
     public synchronized Progress<List<T>> batch(final int size) {
-        final Progress<List<T>> newProgress = new Progress<List<T>>(cancelToken);
+        final Progress<List<T>> newProgress = new Progress<List<T>>(retentionPolicy, cancelToken);
         final List<T> batchedItems = new ArrayList<T>();
         listen(new Listener<T>() {
             @Override
@@ -340,17 +376,5 @@ public class Progress<T> implements Async<T>, Closeable {
     @SuppressWarnings("unchecked")
     public <T2> Progress<T2> cast() {
         return (Progress<T2>) this;
-    }
-
-    public static class AlreadyAddedListenerException extends IllegalStateException {
-        public AlreadyAddedListenerException(Progress progress, Listener listener) {
-            super("Cannot add listener " + listener + " because progress " + progress + " already has a listener");
-        }
-    }
-
-    public static class AlreadyAddedCloseListenerException extends IllegalStateException {
-        public AlreadyAddedCloseListenerException(Progress progress, CloseListener listener) {
-            super("Cannot add close listener " + listener + " because progress " + progress + " already has a close listener");
-        }
     }
 }

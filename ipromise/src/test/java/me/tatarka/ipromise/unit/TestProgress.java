@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 public class TestProgress {
     @Test
     public void testProgressSendBefore() {
-        Channel<String> channel = new Channel<String>();
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_NONE);
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2";
@@ -39,8 +39,38 @@ public class TestProgress {
     }
 
     @Test
-    public void testProgressSendAfter() {
-        Channel<String> channel = new Channel<String>();
+    public void testProgressSendAfterRetainNone() {
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_NONE);
+        Progress<String> progress = channel.progress();
+        String result1 = "result1";
+        String result2 = "result2";
+        Listener listener = mock(Listener.class);
+        channel.send(result1);
+        channel.send(result2);
+        progress.listen(listener);
+
+        verify(listener, never()).receive(result1);
+        verify(listener, never()).receive(result2);
+    }
+
+    @Test
+    public void testProgressSendAfterRetainLast() {
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_LAST);
+        Progress<String> progress = channel.progress();
+        String result1 = "result1";
+        String result2 = "result2";
+        Listener listener = mock(Listener.class);
+        channel.send(result1);
+        channel.send(result2);
+        progress.listen(listener);
+
+        verify(listener, never()).receive(result1);
+        verify(listener).receive(result2);
+    }
+
+    @Test
+    public void testProgressSendAfterRetainAll() {
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_ALL);
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2";
@@ -83,7 +113,7 @@ public class TestProgress {
 
     @Test
     public void testProgressMap() {
-        Channel<String> channel = new Channel<String>();
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_NONE);
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2--";
@@ -103,32 +133,33 @@ public class TestProgress {
 
     @Test
     public void testProgressChain() {
-        Channel<String> channel1 = new Channel<String>();
+        Channel<String> channel1 = new Channel<String>(Progress.RETAIN_NONE);
         Progress<String> progress1 = channel1.progress();
         String result1 = "result1";
-        String result2 = "result2--";
+        String result2 = "result2";
         Listener listener = mock(Listener.class);
-        progress1.then(new Chain<String, Progress<Integer>>() {
+        progress1.then(new Chain<String, Progress<String>>() {
             @Override
-            public Progress<Integer> chain(String result) {
-                Channel<Integer> channel2 = new Channel<Integer>();
-                Progress<Integer> progress2 = channel2.progress();
-                channel2.send(result.length());
-                channel2.send(result.length() + 1);
+            public Progress<String> chain(String result) {
+                Channel<String> channel2 = new Channel<String>(Progress.RETAIN_ALL);
+                Progress<String> progress2 = channel2.progress();
+                channel2.send(result + "a");
+                channel2.send(result + "b");
                 return progress2;
             }
         }).listen(listener);
         channel1.send(result1);
         channel1.send(result2);
 
-        verify(listener).receive(result1.length());
-        verify(listener).receive(result1.length() + 1);
-        verify(listener).receive(result2.length());
-        verify(listener).receive(result2.length() + 1);
+        verify(listener).receive(result1 + "a");
+        verify(listener).receive(result1 + "b");
+        verify(listener).receive(result2 + "a");
+        verify(listener).receive(result2 + "b");
     }
 
-    public void testDeliverLastResultOnNewListener() {
-        Channel<String> channel = new Channel<String>();
+    @Test
+    public void testDeliverOnNewListenerRetainNone() {
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_NONE);
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2";
@@ -140,25 +171,52 @@ public class TestProgress {
             }
         });
         channel.send(result1);
+        channel.send(result2);
+        progress.listen(listener);
+
+        verify(listener, never()).receive(result1);
+        verify(listener, never()).receive(result2);
+    }
+
+    @Test
+    public void testDeliverOnNewListenerRetainLast() {
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_LAST);
+        Progress<String> progress = channel.progress();
+        String result1 = "result1";
+        String result2 = "result2";
+        Listener listener = mock(Listener.class);
+        progress.listen(new Listener<String>() {
+            @Override
+            public void receive(String result) {
+
+            }
+        });
         channel.send(result1);
+        channel.send(result2);
         progress.listen(listener);
 
         verify(listener, never()).receive(result1);
         verify(listener).receive(result2);
     }
 
-    public void testNullCountsAsListener() {
-        Channel<String> channel = new Channel<String>();
+    @Test
+    public void testDeliverOnNewListenerRetainAll() {
+        Channel<String> channel = new Channel<String>(Progress.RETAIN_ALL);
         Progress<String> progress = channel.progress();
         String result1 = "result1";
         String result2 = "result2";
         Listener listener = mock(Listener.class);
-        progress.listen(null);
+        progress.listen(new Listener<String>() {
+            @Override
+            public void receive(String result) {
+
+            }
+        });
         channel.send(result1);
-        channel.send(result1);
+        channel.send(result2);
         progress.listen(listener);
 
-        verify(listener, never()).receive(result1);
+        verify(listener).receive(result1);
         verify(listener).receive(result2);
     }
 

@@ -43,9 +43,7 @@ public class Promise<T> implements Async<T> {
         cancelToken.listen(new CancelToken.Listener() {
             @Override
             public void canceled() {
-                if (!isFinished) {
-                    listeners.clear();
-                }
+                listeners.clear();
             }
         });
     }

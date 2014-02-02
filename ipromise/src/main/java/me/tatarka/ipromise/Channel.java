@@ -14,8 +14,16 @@ public class Channel<T> {
         progress = new Progress<T>();
     }
 
+    public Channel(int retentionPolicy) {
+        progress = new Progress<T>(retentionPolicy);
+    }
+
     public Channel(CancelToken cancelToken) {
         progress = new Progress<T>(cancelToken);
+    }
+
+    public Channel(int retentionPolicy, CancelToken cancelToken) {
+        progress = new Progress<T>(retentionPolicy, cancelToken);
     }
 
     public Progress<T> progress() {

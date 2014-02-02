@@ -11,42 +11,21 @@ import me.tatarka.ipromise.Progress;
 @RunWith(JUnit4.class)
 public class TestProgressBufferMemory {
     @Test
-    public void testBufferClearedOnListen() {
+    public void testBufferRetainNone() {
         TestMessage message = new TestMessage();
-        Channel<TestMessage> channel = new Channel<TestMessage>();
-        Progress<TestMessage> progress = channel.progress();
+        Channel<TestMessage> channel = new Channel<TestMessage>(Progress.RETAIN_NONE);
         channel.send(message);
-        channel.send(null); // Make sure message is not last one, as that one is preserved
-        progress.listen(new Listener<TestMessage>() {
-            @Override
-            public void receive(TestMessage result) {
-            }
-        });
         MemoryLeakVerifier verifier = new MemoryLeakVerifier(message);
         message = null;
         verifier.assertGarbageCollected("Progress messages should be garbage collected when there is a listener");
     }
 
     @Test
-    public void testBufferClearedOnNullListen() {
+    public void testBufferRetainLast() {
         TestMessage message = new TestMessage();
-        Channel<TestMessage> channel = new Channel<TestMessage>();
-        Progress<TestMessage> progress = channel.progress();
+        Channel<TestMessage> channel = new Channel<TestMessage>(Progress.RETAIN_LAST);
         channel.send(message);
         channel.send(null); // Make sure message is not last one, as that one is preserved
-        progress.listen(null);
-        MemoryLeakVerifier verifier = new MemoryLeakVerifier(message);
-        message = null;
-        verifier.assertGarbageCollected("Progress messages should be garbage collected when there is a null listener");
-    }
-
-    @Test
-    public void testBufferClearedOnCancel() {
-        TestMessage message = new TestMessage();
-        Channel<TestMessage> channel = new Channel<TestMessage>();
-        Progress<TestMessage> progress = channel.progress();
-        channel.send(message);
-        progress.cancel();
         MemoryLeakVerifier verifier = new MemoryLeakVerifier(message);
         message = null;
         verifier.assertGarbageCollected("Progress messages should be garbage collected when there is a null listener");
