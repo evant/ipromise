@@ -7,12 +7,56 @@ providing a uniform interface and by turning callback style into the same return
 style of synchronous code. You can view the javadoc at
 http://evant.github.com/ipromise
 
+- [Install](#install)
 - [Usage](#usage)
 - [Implementing Promises](#implementing-promises)
 - [Progress](#progress)
 - [Cancellation](#cancellation)
 - [Android](#android)
 - [A Note on Memory Usage](#a-note-on-memory-usage)
+
+Install
+-----------
+Clone this library, then run
+```bash
+gradle install
+```
+
+### Gradle
+```groovy
+repositories {
+  mavenLocal()
+}
+
+dependencies {
+  compile 'me.tatarka.ipromise:ipromise:1.0-SNAPSHOT'
+}
+```
+
+Or for Android
+```groovy
+dependencies {
+  compile 'me.tatarka.ipromise:ipromise-android:1.0-SNAPSHOT'
+}
+```
+
+### Maven
+```xml
+<dependency>
+  <groupId>me.tatarka.ipromise</groupId>
+  <artifactId>ipromise</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</dependency>
+```
+
+Or for Android
+```xml
+<dependency>
+  <groupId>me.tatarka.ipromise</groupId>
+  <artifactId>ipromise-android</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</dependency>
+```
 
 Usage
 -----
@@ -236,7 +280,7 @@ public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
 }
 ```
 
-There are various different ways to handle old messages on as `Progress` for
+There are various different ways to handle old messages on a `Progress` for
 this reason, the `Channel` constructor can take a retention policy. There are
 3 options.
 
@@ -305,6 +349,7 @@ public class MyActivity extends Activity {
   private AsyncManager asyncManager;
 
   public void onCreate(Bundle savedInstanceState) {
+    // If you are using the support library, use AsyncManagerCompat.get(this)
     asyncManager = AsyncManager.get(this);
     asyncManager.init(Task.of(mySlowTask), new AsyncAdapter<String>() {
       @Override
