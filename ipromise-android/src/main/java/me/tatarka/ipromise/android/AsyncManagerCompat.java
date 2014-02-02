@@ -18,12 +18,12 @@ public final class AsyncManagerCompat {
      * @return the {@code AsyncManager}
      */
     public static AsyncManager get(FragmentActivity activity) {
-        AsyncManagerSupportFragment fragment = (AsyncManagerSupportFragment) activity.getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG);
-        if (fragment == null) {
-            fragment = new AsyncManagerSupportFragment();
-            activity.getSupportFragmentManager().beginTransaction().add(fragment, FRAGMENT_TAG).commit();
+        AsyncManagerSupportFragment manager = (AsyncManagerSupportFragment) activity.getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG);
+        if (manager == null) {
+            manager = new AsyncManagerSupportFragment();
+            activity.getSupportFragmentManager().beginTransaction().add(manager, FRAGMENT_TAG).commit();
         }
-        return new AsyncManager(fragment);
+        return manager.get();
     }
 
     /**
@@ -39,7 +39,7 @@ public final class AsyncManagerCompat {
             manager = new AsyncManagerSupportFragment();
             fragment.getChildFragmentManager().beginTransaction().add(fragment, FRAGMENT_TAG).commit();
         }
-        return new AsyncManager(manager);
+        return manager.get();
     }
 
 }

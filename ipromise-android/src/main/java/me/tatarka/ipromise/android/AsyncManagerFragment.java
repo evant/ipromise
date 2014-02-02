@@ -16,6 +16,7 @@ import me.tatarka.ipromise.Async;
  */
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class AsyncManagerFragment extends Fragment implements IAsyncManager {
+    private AsyncManager asyncManager;
     private Map<String, Async> async = new HashMap<String, Async>();
 
     @Override
@@ -31,6 +32,11 @@ public class AsyncManagerFragment extends Fragment implements IAsyncManager {
         async.clear();
     }
 
+    @Override
+    public AsyncManager get() {
+        if (asyncManager == null)  asyncManager = new AsyncManager(this);
+        return asyncManager;
+    }
 
     @Override
     public <T> Async<T> get(String tag) {

@@ -13,6 +13,7 @@ import me.tatarka.ipromise.Async;
  * @author Evan Tatarka
  */
 public class AsyncManagerSupportFragment extends Fragment implements IAsyncManager {
+    private AsyncManager asyncManager;
     private Map<String, Async> async = new HashMap<String, Async>();
 
     @Override
@@ -26,6 +27,12 @@ public class AsyncManagerSupportFragment extends Fragment implements IAsyncManag
         super.onDestroy();
         cancelAll();
         async.clear();
+    }
+
+    @Override
+    public AsyncManager get() {
+        if (asyncManager == null) asyncManager = new AsyncManager(this);
+        return asyncManager;
     }
 
     @Override

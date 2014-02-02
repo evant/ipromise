@@ -53,12 +53,12 @@ public class AsyncManager {
             throw new UnsupportedOperationException("Method only valid in api 11 and above, use AsyncManagerCompat to support older versions (requires support library)");
         }
 
-        AsyncManagerFragment fragment = (AsyncManagerFragment) activity.getFragmentManager().findFragmentByTag(FRAGMENT_TAG);
-        if (fragment == null) {
-            fragment = new AsyncManagerFragment();
-            activity.getFragmentManager().beginTransaction().add(fragment, FRAGMENT_TAG).commit();
+        AsyncManagerFragment manager = (AsyncManagerFragment) activity.getFragmentManager().findFragmentByTag(FRAGMENT_TAG);
+        if (manager == null) {
+            manager = new AsyncManagerFragment();
+            activity.getFragmentManager().beginTransaction().add(manager, FRAGMENT_TAG).commit();
         }
-        return new AsyncManager(fragment);
+        return manager.get();
     }
 
     /**
@@ -80,7 +80,7 @@ public class AsyncManager {
             manager = new AsyncManagerFragment();
             fragment.getChildFragmentManager().beginTransaction().add(fragment, FRAGMENT_TAG).commit();
         }
-        return new AsyncManager(manager);
+        return manager.get();
     }
 
     AsyncManager(IAsyncManager manager) {
