@@ -1,7 +1,6 @@
 package me.tatarka.ipromise.android.example;
 
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
@@ -16,9 +15,9 @@ import me.tatarka.ipromise.PromiseTask;
 import me.tatarka.ipromise.Task;
 import me.tatarka.ipromise.Tasks;
 import me.tatarka.ipromise.android.AsyncAdapter;
-import me.tatarka.ipromise.android.AsyncCallback;
 import me.tatarka.ipromise.android.AsyncItem;
 import me.tatarka.ipromise.android.AsyncManager;
+import me.tatarka.ipromise.android.SaveCallback;
 
 public class MainActivity extends ActionBarActivity {
     private static final String SLEEP_TASK_INIT = "sleep_task_init";
@@ -67,16 +66,6 @@ public class MainActivity extends ActionBarActivity {
                         buttonLaunch.setEnabled(false);
                         buttonLaunch.setText(result + " (Launch)");
                     }
-
-                    @Override
-                    public void save(String result, Bundle outState) {
-                        outState.putString(SLEEP_TASK_INIT, result);
-                    }
-
-                    @Override
-                    public String restore(Bundle savedState) {
-                        return savedState.getString(SLEEP_TASK_INIT);
-                    }
                 }
         );
 
@@ -96,6 +85,17 @@ public class MainActivity extends ActionBarActivity {
                         progressInit.setVisibility(View.INVISIBLE);
                         buttonInit.setEnabled(false);
                         buttonInit.setText(result + " (Init)");
+                    }
+                },
+                new SaveCallback<String>() {
+                    @Override
+                    public void asyncSave(String result, Bundle outState) {
+                        outState.putString(SLEEP_TASK_INIT, result);
+                    }
+
+                    @Override
+                    public String asyncRestore(Bundle savedState) {
+                        return savedState.getString(SLEEP_TASK_INIT);
                     }
                 }
         );

@@ -1,8 +1,5 @@
 package me.tatarka.ipromise.android;
 
-import android.os.Bundle;
-import android.os.Parcelable;
-
 /**
  * The callback registered to {@link me.tatarka.ipromise.android.AsyncManager}. This will allow you
  * to manage the display state of your Activity or Fragment based on the state of the async
@@ -35,8 +32,4 @@ public interface AsyncCallback<T> {
      * This is where you would change your UI to show the completion of the async operation.
      */
     void end();
-
-    void save(T result, Bundle outState);
-
-    T restore(Bundle savedState);
 }

@@ -76,20 +76,36 @@ public class AsyncManager {
         this.handler = new Handler(Looper.getMainLooper());
     }
 
+    public <T> AsyncItem<T> add(String tag, Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
+        return new AsyncItem<T>(handler, manager, tag, task, callback, saveCallback);
+    }
+
+    public <T> AsyncItem<T> add(Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
+        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, saveCallback);
+    }
+
+    public <T> AsyncItem<T> start(String tag, Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
+        return new AsyncItem<T>(handler, manager, tag, task, callback, saveCallback).start();
+    }
+
+    public <T> AsyncItem<T> start(Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
+        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, saveCallback).start();
+    }
+
     public <T> AsyncItem<T> add(String tag, Task<T> task, AsyncCallback<T> callback) {
-        return new AsyncItem<T>(handler, manager, tag, task, callback);
+        return new AsyncItem<T>(handler, manager, tag, task, callback, null);
     }
 
     public <T> AsyncItem<T> add(Task<T> task, AsyncCallback<T> callback) {
-        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback);
+        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, null);
     }
 
     public <T> AsyncItem<T> start(String tag, Task<T> task, AsyncCallback<T> callback) {
-        return new AsyncItem<T>(handler, manager, tag, task, callback).start();
+        return new AsyncItem<T>(handler, manager, tag, task, callback, null).start();
     }
 
     public <T> AsyncItem<T> start(Task<T> task, AsyncCallback<T> callback) {
-        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback).start();
+        return new AsyncItem<T>(handler, manager, DEFAULT, task, callback, null).start();
     }
 
     /**

@@ -13,35 +13,49 @@ import me.tatarka.ipromise.Async;
  * @author Evan Tatarka
  */
 public class AsyncManagerSupportFragment extends Fragment implements IAsyncManager {
-    private Map<String, Async> async = new HashMap<String, Async>();
+    private AsyncManagerFragmentHelper helper = new AsyncManagerFragmentHelper();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+        helper.onCreate(savedInstanceState);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        cancelAll();
-        async.clear();
+        helper.onDestroy();
     }
 
     @Override
     public <T> Async<T> get(String tag) {
-        return async.get(tag);
+        return helper.get(tag);
     }
 
     @Override
     public <T> void put(String tag, Async<T> async) {
-        this.async.put(tag, async);
+        helper.put(tag, async);
     }
 
     @Override
     public void cancelAll() {
-        for (Async async : this.async.values()) {
-            async.cancelToken().cancel();
-        }
+        helper.cancelAll();
+    }
+
+    @Override
+    public <T> void save(String tag, SaveCallback<T> callback) {
+        helper.save(tag, callback);
+    }
+
+    @Override
+    public <T> T restore(String tag, SaveCallback<T> callback) {
+        return helper.restore(tag, callback);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        helper.onSaveInstanceState(outState);
     }
 }

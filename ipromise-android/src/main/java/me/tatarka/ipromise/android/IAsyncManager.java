@@ -8,7 +8,11 @@ import me.tatarka.ipromise.Async;
 interface IAsyncManager {
     <T> Async<T> get(String tag);
 
-    <T> void put(String tag, Async<T> promise);
+    <T> void put(String tag, Async<T> async);
 
     void cancelAll();
+
+    <T> void save(String tag, SaveCallback<T> callback);
+
+    <T> T restore(String tag, SaveCallback<T> callback);
 }

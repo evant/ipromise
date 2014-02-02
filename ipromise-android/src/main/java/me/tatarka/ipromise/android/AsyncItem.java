@@ -18,16 +18,23 @@ public class AsyncItem<T> {
     private String tag;
     private Task<T> task;
     private AsyncCallback<T> callback;
+    private SaveCallback<T> saveCallback;
 
     private boolean isSetup;
     private boolean isListen;
 
-    AsyncItem(Handler handler, IAsyncManager manager, String tag, Task<T> task, AsyncCallback<T> callback) {
+    AsyncItem(Handler handler, IAsyncManager manager, String tag, Task<T> task, AsyncCallback<T> callback, SaveCallback<T> saveCallback) {
         this.handler = handler;
         this.manager = manager;
         this.tag = tag;
         this.task = task;
         this.callback = callback;
+        this.saveCallback = saveCallback;
+
+        if (saveCallback != null) {
+            T result = manager.restore(tag, saveCallback);
+            if (result != null) callback.receive(result);
+        }
 
         Async<T> async = manager.get(tag);
         if (async != null) {
@@ -101,6 +108,11 @@ public class AsyncItem<T> {
     private void setupCallback(Async<T> async) {
         if (!isSetup) {
             isSetup = true;
+
+            if (saveCallback != null) {
+                manager.save(tag, saveCallback);
+            }
+
             if (async.isRunning()) {
                 if (callback != null) callback.start();
             } else if (async instanceof Closeable && ((Closeable) async).isClosed()) {
