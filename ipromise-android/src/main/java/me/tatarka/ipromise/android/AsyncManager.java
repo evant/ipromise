@@ -6,7 +6,6 @@ import android.app.Fragment;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v4.app.FragmentActivity;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -23,8 +22,8 @@ import me.tatarka.ipromise.Task;
 
 /**
  * A way to manage asynchronous actions in Android that is much easier to get right than an {@link
- * android.os.AsyncTask} or a {@link android.support.v4.content.Loader}. It properly handles
- * Activity destruction, configuration changes, and posting back to the UI thread.
+ * android.os.AsyncTask} or a {@link android.content.Loader}. It properly handles Activity
+ * destruction, configuration changes, and posting back to the UI thread.
  */
 public class AsyncManager {
     /**
@@ -34,44 +33,12 @@ public class AsyncManager {
      */
     public static final String DEFAULT = AsyncManager.class.getCanonicalName() + "_default";
 
-    private static final String FRAGMENT_TAG = AsyncManager.class.getCanonicalName() + "_fragment";
+    static final String FRAGMENT_TAG = AsyncManager.class.getCanonicalName() + "_fragment";
 
     private final IAsyncManager manager;
     private final Handler handler;
     private final Map<String, AsyncCallback> callbacks = new HashMap<String, AsyncCallback>();
     private final Map<String, PendingCallback> pendingCallbacks = new HashMap<String, PendingCallback>();
-
-    /**
-     * Get an instance of {@code AsyncManager} that is tied to the lifecycle of the given {@link
-     * android.support.v4.app.FragmentActivity}.
-     *
-     * @param activity the activity
-     * @return the {@code AsyncManager}
-     */
-    public static AsyncManager get(FragmentActivity activity) {
-        AsyncManagerSupportFragment fragment = (AsyncManagerSupportFragment) activity.getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG);
-        if (fragment == null) {
-            fragment = new AsyncManagerSupportFragment();
-            activity.getSupportFragmentManager().beginTransaction().add(fragment, FRAGMENT_TAG).commit();
-        }
-        return new AsyncManager(fragment);
-    }
-
-    /**
-     * Get an instance of {@code AsyncManager} that is tied to the lifecycle of the given {@link
-     * android.support.v4.app.Fragment}.
-     *
-     * @param fragment the fragment
-     * @return the {@code AsyncManager}
-     */
-    public static AsyncManager get(android.support.v4.app.Fragment fragment) {
-        AsyncManagerSupportFragment manager = (AsyncManagerSupportFragment) fragment.getChildFragmentManager().findFragmentByTag(FRAGMENT_TAG);
-        if (manager == null) {
-            manager = new AsyncManagerSupportFragment();
-            fragment.getChildFragmentManager().beginTransaction().add(fragment, FRAGMENT_TAG).commit();
-        }
-        return new AsyncManager(manager);
-    }
 
     /**
      * Get an instance of the {@code AsyncManager} that is tied to the lifecycle of the given {@link
@@ -82,6 +49,10 @@ public class AsyncManager {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static AsyncManager get(Activity activity) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            throw new UnsupportedOperationException("Method only valid in api 11 and above, use AsyncManagerCompat to support older versions (requires support library)");
+        }
+
         AsyncManagerFragment fragment = (AsyncManagerFragment) activity.getFragmentManager().findFragmentByTag(FRAGMENT_TAG);
         if (fragment == null) {
             fragment = new AsyncManagerFragment();
@@ -99,7 +70,12 @@ public class AsyncManager {
      */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     public static AsyncManager get(Fragment fragment) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            throw new UnsupportedOperationException("Method only valid in api 17 and above, use AsyncManagerCompat to support older versions (requires support library)");
+        }
+
         AsyncManagerFragment manager = (AsyncManagerFragment) fragment.getChildFragmentManager().findFragmentByTag(FRAGMENT_TAG);
+
         if (manager == null) {
             manager = new AsyncManagerFragment();
             fragment.getChildFragmentManager().beginTransaction().add(fragment, FRAGMENT_TAG).commit();
@@ -107,7 +83,7 @@ public class AsyncManager {
         return new AsyncManager(manager);
     }
 
-    private AsyncManager(IAsyncManager manager) {
+    AsyncManager(IAsyncManager manager) {
         this.manager = manager;
         this.handler = new Handler(Looper.getMainLooper());
     }

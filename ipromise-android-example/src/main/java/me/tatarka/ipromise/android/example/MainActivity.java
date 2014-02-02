@@ -15,7 +15,6 @@ import me.tatarka.ipromise.PromiseTask;
 import me.tatarka.ipromise.Task;
 import me.tatarka.ipromise.Tasks;
 import me.tatarka.ipromise.android.AsyncAdapter;
-import me.tatarka.ipromise.android.AsyncCallback;
 import me.tatarka.ipromise.android.AsyncManager;
 
 public class MainActivity extends ActionBarActivity {
