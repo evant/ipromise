@@ -1,6 +1,7 @@
 package me.tatarka.ipromise;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,56 +33,27 @@ public class Promise<T> {
     public static final int BUFFER_ALL = 2;
 
     private CancelToken cancelToken;
-    private List<Listener<T>> listeners = new ArrayList<Listener<T>>();
-    private List<CloseListener> closeListeners = new ArrayList<CloseListener>();
-    private PromiseBufferFactory bufferFactory;
-    private PromiseBuffer<T> buffer;
     private boolean isClosed;
 
-    /**
-     * Constructs a new promise. This is used internally by {@link Deferred}.
-     */
-    public Promise() {
+    protected final List<Listener<T>> listeners = new ArrayList<Listener<T>>();
+    protected final List<CloseListener> closeListeners = new ArrayList<CloseListener>();
+
+    protected Promise() {
         this(new CancelToken());
     }
 
-    /**
-     * Constructs a new promise with the given {@link CancelToken}. When the token is canceled, the
-     * promise is also canceled. This is used internally by {@link Deferred}.
-     *
-     * @param cancelToken the cancel token
-     */
-    Promise(CancelToken cancelToken) {
-        this(PromiseBuffers.last(), cancelToken);
-    }
-
-    Promise(PromiseBufferFactory bufferFactory) {
-        this(bufferFactory, new CancelToken());
-    }
-
-    Promise(PromiseBufferFactory bufferFactory, CancelToken cancelToken) {
-        this.bufferFactory = bufferFactory;
-        this.buffer = bufferFactory.create();
+    protected Promise(CancelToken cancelToken) {
         this.cancelToken = cancelToken;
-        cancelToken.listen(new CancelToken.Listener() {
+    }
+
+    protected Promise(final Promise parentPromise) {
+        this(parentPromise.cancelToken);
+        parentPromise.onClose(new CloseListener() {
             @Override
-            public void canceled() {
-                listeners.clear();
+            public void close() {
+                Promise.this.close();
             }
         });
-    }
-
-    /**
-     * Constructs a promise with a result already in it. This is useful for when you can return the
-     * value immediately.
-     *
-     * @param result the result
-     */
-    public Promise(T result) {
-        cancelToken = new CancelToken();
-        buffer = new ArrayPromiseBuffer<T>(1);
-        buffer.add(result);
-        isClosed = true;
     }
 
     /**
@@ -102,12 +74,18 @@ public class Promise<T> {
     synchronized void send(T message) {
         if (cancelToken.isCanceled()) return;
         if (isClosed) throw new AlreadyClosedException(message);
-        buffer.add(message);
 
+        onSend(message);
+        dispatch(message);
+    }
+
+    void dispatch(T message) {
         for (Listener<T> listener : listeners) {
             listener.receive(message);
         }
     }
+
+    protected void onSend(T message) {}
 
     /**
      * Notifies the {@code Promise} that no more messages will be sent. This is used internally by
@@ -165,19 +143,17 @@ public class Promise<T> {
      * @param listener the listener to call when the promise receives a message
      * @return the {@code Promise} for chaining
      */
-    public synchronized Promise<T> listen(Listener<T> listener) {
+    public synchronized Promise<T> listen(final Listener<T> listener) {
         if (listener == null) return this;
 
-        for (T message : buffer) {
-            listener.receive(message);
-        }
-
-        if (!isClosed) {
-            listeners.add(listener);
-        }
+        listeners.add(listener);
+        onListen(listener);
+        if (isClosed) listeners.clear();
 
         return this;
     }
+
+    protected void onListen(Listener<T> listener) {}
 
     /**
      * Listens to a {@code Promise}, receiving a callback when it is closed, i.e. it wont receive
@@ -208,18 +184,12 @@ public class Promise<T> {
      * @param <T2> the result type of the new {@code Promise}
      * @return the new {@code Promise}
      */
-    public <T2> Promise<T2> then(final Map<T, T2> map) {
-        final Promise<T2> newPromise = new Promise<T2>(bufferFactory, cancelToken);
+    public synchronized <T2> Promise<T2> then(final Map<T, T2> map) {
+        final Promise<T2> newPromise = new Promise<T2>(this);
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {
                 newPromise.send(map.map(result));
-            }
-        });
-        onClose(new CloseListener() {
-            @Override
-            public void close() {
-                newPromise.close();
             }
         });
         return newPromise;
@@ -232,25 +202,17 @@ public class Promise<T> {
      * @param <T2>  the type of the second {@code Promise} result
      * @return the new {@code Promise}
      */
-    public <T2> Promise<T2> then(final Chain<T, Promise<T2>> chain) {
-        final Promise<T2> newPromise = new Promise<T2>(bufferFactory, cancelToken);
+    public synchronized  <T2> Promise<T2> then(final Chain<T, Promise<T2>> chain) {
+        final Promise<T2> newPromise = new Promise<T2>(this);
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {
-                final Promise<T2> chainedPromise = chain.chain(result);
-                CancelToken.join(cancelToken, chainedPromise.cancelToken);
-                chainedPromise.listen(new Listener<T2>() {
+                chain.chain(result).listen(new Listener<T2>() {
                     @Override
                     public void receive(T2 result) {
                         newPromise.send(result);
                     }
                 });
-            }
-        });
-        onClose(new CloseListener() {
-            @Override
-            public void close() {
-                newPromise.close();
             }
         });
         return newPromise;
@@ -265,20 +227,16 @@ public class Promise<T> {
      * @return the new {@code Progress}
      */
     public synchronized Promise<T> then(final Filter<T> filter) {
-        final Promise<T> newProgress = new Promise<T>(bufferFactory, cancelToken);
+        final Promise<T> newPromise = new Promise<T>(this);
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {
-                if (filter.filter(result)) newProgress.send(result);
+                if (filter.filter(result)) {
+                    newPromise.send(result);
+                }
             }
         });
-        onClose(new CloseListener() {
-            @Override
-            public void close() {
-                newProgress.close();
-            }
-        });
-        return newProgress;
+        return newPromise;
     }
 
     /**
@@ -290,14 +248,14 @@ public class Promise<T> {
      * @return the new {@code Promise}
      */
     public synchronized Promise<List<T>> batch(final int size) {
-        final Promise<List<T>> newProgress = new Promise<List<T>>(bufferFactory, cancelToken);
+        final Promise<List<T>> newPromise = new Promise<List<T>>(cancelToken);
         final List<T> batchedItems = new ArrayList<T>();
         listen(new Listener<T>() {
             @Override
             public void receive(T result) {
                 batchedItems.add(result);
                 if (batchedItems.size() >= size) {
-                    newProgress.send(new ArrayList<T>(batchedItems));
+                    newPromise.send(new ArrayList<T>(batchedItems));
                     batchedItems.clear();
                 }
             }
@@ -306,13 +264,13 @@ public class Promise<T> {
             @Override
             public void close() {
                 if (!batchedItems.isEmpty()) {
-                    newProgress.send(new ArrayList<T>(batchedItems));
+                    newPromise.send(new ArrayList<T>(batchedItems));
                     batchedItems.clear();
                 }
-                newProgress.close();
+                newPromise.close();
             }
         });
-        return newProgress;
+        return newPromise;
     }
 
     /**
@@ -324,7 +282,7 @@ public class Promise<T> {
      * @return the new {@code Promise}
      */
     public <T2> Promise<Pair<T, T2>> and(Promise<T2> promise) {
-        return and(bufferFactory, this, promise).then(new Map<List, Pair<T, T2>>() {
+        return and(this, promise).then(new Map<List, Pair<T, T2>>() {
             @Override
             public Pair<T, T2> map(List result) {
                 return Pair.of((T) result.get(0), (T2) result.get(1));
@@ -340,10 +298,10 @@ public class Promise<T> {
      * @param promises the promises
      * @return the new {@code Promise}
      */
-    public static Promise<List> and(PromiseBufferFactory bufferFactory, final Promise... promises) {
+    public static Promise<List> and(final Promise... promises) {
         if (promises == null) throw new NullPointerException();
 
-        final Promise<List> newPromise = new Promise<List>(bufferFactory);
+        final Promise<List> newPromise = new Promise<List>();
         final AtomicInteger count = new AtomicInteger();
         final AtomicInteger size = new AtomicInteger(promises.length);
         final List results = new ArrayList(promises.length);
@@ -464,5 +422,4 @@ public class Promise<T> {
             super(message + " cannot be sent because the promise has already been closed.");
         }
     }
-
 }

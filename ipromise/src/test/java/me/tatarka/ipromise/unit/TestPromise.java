@@ -222,8 +222,7 @@ public class TestPromise {
         Promise<String> promise = deferred.promise();
         Listener listener = mock(Listener.class);
         promise.then(Filters.equal("good")).listen(listener);
-        deferred.send("bad");
-        deferred.send("good");
+        deferred.send("bad").send("good");
 
         verify(listener, never()).receive("bad");
         verify(listener).receive("good");
@@ -235,12 +234,12 @@ public class TestPromise {
         Promise<String> promise = deferred.promise();
         Listener listener = mock(Listener.class);
         promise.batch(2).listen(listener);
-        deferred.send("one");
-        deferred.send("two");
-        deferred.send("three");
-        deferred.send("four");
-        deferred.send("five");
-        deferred.close();
+        deferred.send("one")
+                .send("two")
+                .send("three")
+                .send("four")
+                .send("five")
+                .close();
 
         verify(listener).receive(Arrays.asList("one", "two"));
         verify(listener).receive(Arrays.asList("three", "four"));

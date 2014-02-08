@@ -352,7 +352,7 @@ public final class Result<T, E extends Exception> {
     public static abstract class ChainPromise<T1, T2, E extends Exception> extends Chain<T1, E, Promise<Result<T2, E>>> {
         @Override
         protected Promise<Result<T2, E>> error(E error) {
-            return new Promise<Result<T2, E>>(Result.<T2, E>error(error));
+            return new ValuePromise<Result<T2, E>>(Result.<T2, E>error(error));
         }
     }
 }

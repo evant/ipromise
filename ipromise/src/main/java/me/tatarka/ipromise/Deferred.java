@@ -1,5 +1,6 @@
 package me.tatarka.ipromise;
 
+import me.tatarka.ipromise.buffer.PromiseBuffer;
 import me.tatarka.ipromise.buffer.PromiseBufferFactory;
 import me.tatarka.ipromise.buffer.PromiseBuffers;
 
@@ -18,7 +19,7 @@ public class Deferred<T> {
      * Constructs a new {@code Deferred}.
      */
     public Deferred() {
-        promise = new Promise<T>();
+        this(PromiseBuffers.<T>last(), new CancelToken());
     }
 
     /**
@@ -29,23 +30,23 @@ public class Deferred<T> {
      * @param cancelToken the cancel token
      */
     public Deferred(CancelToken cancelToken) {
-        promise = new Promise<T>(cancelToken);
+        this(PromiseBuffers.<T>last(), cancelToken);
     }
 
-    public Deferred(PromiseBufferFactory bufferFactor) {
-        promise = new Promise<T>(bufferFactor);
+    public Deferred(PromiseBuffer<T> buffer) {
+        this(buffer, new CancelToken());
     }
 
     public Deferred(int bufferType) {
-        promise = new Promise<T>(PromiseBuffers.ofType(bufferType));
+        this(PromiseBuffers.<T>ofType(bufferType), new CancelToken());
     }
 
     public Deferred(int bufferType, CancelToken cancelToken) {
-        promise = new Promise<T>(PromiseBuffers.ofType(bufferType));
+        this(PromiseBuffers.<T>ofType(bufferType), cancelToken);
     }
 
-    public Deferred(PromiseBufferFactory bufferFactory, CancelToken cancelToken) {
-        promise = new Promise<T>(bufferFactory, cancelToken);
+    public Deferred(PromiseBuffer<T> buffer, CancelToken cancelToken) {
+        promise = new ValuePromise<T>(buffer, cancelToken);
     }
 
     /**
