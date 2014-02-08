@@ -1,4 +1,4 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.buffer;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.RandomAccess;
+
+import me.tatarka.ipromise.buffer.PromiseBuffer;
 
 public class RingPromiseBuffer<T> implements PromiseBuffer<T> {
     private int capacity;

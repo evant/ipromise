@@ -7,7 +7,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
-import me.tatarka.ipromise.Task;
+import me.tatarka.ipromise.task.Task;
 
 /**
  * A way to manage asynchronous actions in Android that is much easier to get right than an {@link
@@ -79,7 +79,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager}. This should be
      * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
      * task will not be started until you call {@link AsyncItem#start()} or {@link
      * AsyncItem#restart()}.
@@ -98,7 +98,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager}. This should be
      * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
      * task will not be started until you call {@link AsyncItem#start()} or {@link
      * AsyncItem#restart()}.
@@ -115,7 +115,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager}. This should be
      * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
      * task will not be started until you call {@link AsyncItem#start()} or {@link
      * AsyncItem#restart()}.
@@ -132,7 +132,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager}. This should be
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager}. This should be
      * called in {@link android.app.Activity#onCreate(android.os.Bundle)} or a similar method. The
      * task will not be started until you call {@link AsyncItem#start()} or {@link
      * AsyncItem#restart()}.
@@ -147,7 +147,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager} and immediately
      * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
      * or a similar method. This is equivalent to calling {@code add(...).start()}
      *
@@ -165,7 +165,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager} and immediately
      * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
      * or a similar method. This is equivalent to calling {@code add(...).start()}
      *
@@ -181,7 +181,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager} and immediately
      * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
      * or a similar method. This is equivalent to calling {@code add(...).start()}
      *
@@ -197,7 +197,7 @@ public class AsyncManager {
     }
 
     /**
-     * Registers a {@link me.tatarka.ipromise.Task} to the {@code AsyncManager} and immediately
+     * Registers a {@link me.tatarka.ipromise.task.Task} to the {@code AsyncManager} and immediately
      * starts it if needed. This should be called in {@link android.app.Activity#onCreate(android.os.Bundle)}
      * or a similar method. This is equivalent to calling {@code add(...).start()}
      *

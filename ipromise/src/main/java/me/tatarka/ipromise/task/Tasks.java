@@ -1,7 +1,9 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.task;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+import me.tatarka.ipromise.Promise;
 
 /**
  * A collection of helper methods for constructing tasks.
@@ -39,27 +41,27 @@ public final class Tasks {
     }
 
     /**
-     * Constructs a new {@link me.tatarka.ipromise.ExecutorTask} that calls the given callback in a separate
+     * Constructs a new {@link ExecutorTask} that calls the given callback in a separate
      * thread when {@link Task#start()} is called.
      *
      * @param callback the callback to run in a separate thread
      * @param <T>      the result type
      * @return the task
-     * @see me.tatarka.ipromise.ExecutorTask
+     * @see ExecutorTask
      */
     public static <T> ExecutorTask<T> of(Task.Do<T> callback) {
         return Tasks.of(Executors.newSingleThreadExecutor(), callback);
     }
 
     /**
-     * Constructs a new {@link me.tatarka.ipromise.ExecutorTask} that calls the given callback using the given
+     * Constructs a new {@link ExecutorTask} that calls the given callback using the given
      * {@link java.util.concurrent.Executor} when {@link Task#start()} is called.
      *
      * @param executor the executor used to run the callback
      * @param callback the callback
      * @param <T>      the result type
      * @return the task
-     * @see me.tatarka.ipromise.ExecutorTask
+     * @see ExecutorTask
      */
     public static <T> ExecutorTask<T> of(Executor executor, Task.Do<T> callback) {
         return new ExecutorTask<T>(executor, callback);

@@ -2,8 +2,15 @@ package me.tatarka.ipromise;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import me.tatarka.ipromise.buffer.ArrayPromiseBuffer;
+import me.tatarka.ipromise.buffer.PromiseBuffer;
+import me.tatarka.ipromise.buffer.PromiseBufferFactory;
+import me.tatarka.ipromise.buffer.PromiseBuffers;
+import me.tatarka.ipromise.func.Chain;
+import me.tatarka.ipromise.func.Filter;
+import me.tatarka.ipromise.func.Map;
 
 /**
  * A promise is a way to return a result the will be fulfilled sometime in the future. This fixes
@@ -153,7 +160,7 @@ public class Promise<T> {
 
     /**
      * Listens to a {@code Promise}, getting a result whenever a message is sent. If and how many
-     * previous results are returned depends on the {@link me.tatarka.ipromise.PromiseBuffer}.
+     * previous results are returned depends on the {@link me.tatarka.ipromise.buffer.PromiseBuffer}.
      *
      * @param listener the listener to call when the promise receives a message
      * @return the {@code Promise} for chaining
@@ -194,7 +201,7 @@ public class Promise<T> {
 
     /**
      * Constructs a new {@code Promise} that returns when the original promise returns but passes
-     * the result through the given {@link Map} function.
+     * the result through the given {@link me.tatarka.ipromise.func.Map} function.
      *
      * @param map  the function to chain the result of the original {@code Promise} to the new
      *             promise
@@ -221,7 +228,7 @@ public class Promise<T> {
     /**
      * Constructs a new {@code Promise} that chains two promises in succession.
      *
-     * @param chain the {@link Chain} that constructs the second {@code Promise}
+     * @param chain the {@link me.tatarka.ipromise.func.Chain} that constructs the second {@code Promise}
      * @param <T2>  the type of the second {@code Promise} result
      * @return the new {@code Promise}
      */
@@ -251,7 +258,7 @@ public class Promise<T> {
 
     /**
      * Constructs a new {@code Promise} that filters this {@code Promise}. i.e. the new {@code
-     * Promise} will not receive any messages when {@link me.tatarka.ipromise.Filter#filter(Object)}
+     * Promise} will not receive any messages when {@link me.tatarka.ipromise.func.Filter#filter(Object)}
      * returns false.
      *
      * @param filter the filter

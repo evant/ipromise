@@ -9,9 +9,8 @@ import android.widget.ProgressBar;
 
 import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.Deferred;
-import me.tatarka.ipromise.Promise;
-import me.tatarka.ipromise.Task;
-import me.tatarka.ipromise.Tasks;
+import me.tatarka.ipromise.task.Task;
+import me.tatarka.ipromise.task.Tasks;
 import me.tatarka.ipromise.android.AsyncAdapter;
 import me.tatarka.ipromise.android.AsyncItem;
 import me.tatarka.ipromise.android.AsyncManager;

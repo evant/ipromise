@@ -1,4 +1,4 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.func;
 
 /**
  * Chains the result of one thing to another

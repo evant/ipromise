@@ -1,4 +1,4 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.func;
 
 /**
  * Maps the result of one {@code Promise} to the result of another {@code Promise}

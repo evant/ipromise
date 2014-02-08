@@ -6,14 +6,13 @@ import org.junit.runners.JUnit4;
 
 import java.util.Arrays;
 
-import me.tatarka.ipromise.Chain;
+import me.tatarka.ipromise.func.Chain;
 import me.tatarka.ipromise.Deferred;
-import me.tatarka.ipromise.Filters;
+import me.tatarka.ipromise.func.Filters;
 import me.tatarka.ipromise.Listener;
-import me.tatarka.ipromise.Map;
+import me.tatarka.ipromise.func.Map;
 import me.tatarka.ipromise.Pair;
 import me.tatarka.ipromise.Promise;
-import me.tatarka.ipromise.PromiseBuffers;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

@@ -9,10 +9,10 @@ import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.CloseListener;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Promise;
-import me.tatarka.ipromise.Task;
+import me.tatarka.ipromise.task.Task;
 
 /**
- * Manages a {@link me.tatarka.ipromise.Task} added to an {@link me.tatarka.ipromise.android.AsyncManager}.
+ * Manages a {@link me.tatarka.ipromise.task.Task} added to an {@link me.tatarka.ipromise.android.AsyncManager}.
  * You can query for the task's state, and start and restart it.
  *
  * @param <T> the result type

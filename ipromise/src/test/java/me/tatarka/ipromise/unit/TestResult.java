@@ -4,8 +4,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import me.tatarka.ipromise.Chain;
-import me.tatarka.ipromise.Map;
+import me.tatarka.ipromise.func.Chain;
+import me.tatarka.ipromise.func.Map;
 import me.tatarka.ipromise.Result;
 
 import static org.fest.assertions.api.Assertions.assertThat;

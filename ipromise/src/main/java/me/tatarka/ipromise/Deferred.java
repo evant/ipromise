@@ -1,5 +1,8 @@
 package me.tatarka.ipromise;
 
+import me.tatarka.ipromise.buffer.PromiseBufferFactory;
+import me.tatarka.ipromise.buffer.PromiseBuffers;
+
 /**
  * A {@code Deferred} is the producer end of a {@link Promise}. An asynchronous method creates a
  * {@code Deferred} and returns {@link Deferred#promise()}, then calls {@link

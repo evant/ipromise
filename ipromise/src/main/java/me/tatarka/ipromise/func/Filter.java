@@ -1,4 +1,4 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.func;
 
 /**
  * Filters a set of items. Returning true will keep the item, returning false will drop it.

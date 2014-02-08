@@ -1,4 +1,4 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.buffer;
 
 public interface PromiseBufferFactory {
     <T> PromiseBuffer<T> create();

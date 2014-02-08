@@ -10,8 +10,8 @@ import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Promise;
 import me.tatarka.ipromise.Result;
-import me.tatarka.ipromise.Task;
-import me.tatarka.ipromise.Tasks;
+import me.tatarka.ipromise.task.Task;
+import me.tatarka.ipromise.task.Tasks;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

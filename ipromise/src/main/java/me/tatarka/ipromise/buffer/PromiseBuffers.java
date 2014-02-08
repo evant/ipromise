@@ -1,4 +1,6 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.buffer;
+
+import me.tatarka.ipromise.Promise;
 
 public final class PromiseBuffers {
     private PromiseBuffers() { }

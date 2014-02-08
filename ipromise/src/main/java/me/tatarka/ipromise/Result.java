@@ -126,7 +126,7 @@ public final class Result<T, E extends Exception> {
      * @param <T2> the type of the new successful result
      * @return the new result
      */
-    public <T2> Result<T2, E> onSuccess(me.tatarka.ipromise.Map<T, T2> map) {
+    public <T2> Result<T2, E> onSuccess(me.tatarka.ipromise.func.Map<T, T2> map) {
         if (isSuccess()) {
             return Result.success(map.map(getSuccess()));
         } else {
@@ -142,7 +142,7 @@ public final class Result<T, E extends Exception> {
      * @param <E2> the type of the new error result
      * @return the new result
      */
-    public <E2 extends Exception> Result<T, E2> onError(me.tatarka.ipromise.Map<E, E2> map) {
+    public <E2 extends Exception> Result<T, E2> onError(me.tatarka.ipromise.func.Map<E, E2> map) {
         if (isError()) {
             return Result.error(map.map(getError()));
         } else {
@@ -158,7 +158,7 @@ public final class Result<T, E extends Exception> {
      * @param <T2>  the type of the second result
      * @return the new result
      */
-    public <T2> Result<T2, E> onSuccess(me.tatarka.ipromise.Chain<T, Result<T2, E>> chain) {
+    public <T2> Result<T2, E> onSuccess(me.tatarka.ipromise.func.Chain<T, Result<T2, E>> chain) {
         if (isSuccess()) {
             return chain.chain(getSuccess());
         } else {
@@ -174,7 +174,7 @@ public final class Result<T, E extends Exception> {
      * @param <E2>  the error type of the second result
      * @return the new result
      */
-    public <E2 extends Exception> Result<T, E2> onError(me.tatarka.ipromise.Chain<E, Result<T, E2>> chain) {
+    public <E2 extends Exception> Result<T, E2> onError(me.tatarka.ipromise.func.Chain<E, Result<T, E2>> chain) {
         if (isError()) {
             return chain.chain(getError());
         } else {
@@ -248,15 +248,15 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Promise#then(me.tatarka.ipromise.Map)} or {@link
-     * Progress#then(me.tatarka.ipromise.Map)} that gives two callbacks for success and failure
+     * A listener to use for {@link Promise#then(me.tatarka.ipromise.func.Map)} or {@link
+     * Progress#then(me.tatarka.ipromise.func.Map)} that gives two callbacks for success and failure
      * instead of just one.
      *
      * @param <T1> the type of the original result success value
      * @param <T2> the type of the new result success value
      * @param <E>  the type of the result error
      */
-    public static abstract class Map<T1, T2, E extends Exception> implements me.tatarka.ipromise.Map<Result<T1, E>, Result<T2, E>> {
+    public static abstract class Map<T1, T2, E extends Exception> implements me.tatarka.ipromise.func.Map<Result<T1, E>, Result<T2, E>> {
         @Override
         public final Result<T2, E> map(Result<T1, E> result) {
             if (result.isSuccess()) {
@@ -287,8 +287,8 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Promise#then(me.tatarka.ipromise.Chain)} or {@link
-     * Progress#then(me.tatarka.ipromise.Chain)} that gives two callbacks for success and failure.
+     * A listener to use for {@link Promise#then(me.tatarka.ipromise.func.Chain)} or {@link
+     * Progress#then(me.tatarka.ipromise.func.Chain)} that gives two callbacks for success and failure.
      * With this class you must implement them both. If you don't need to change the error value,
      * you should use the more specific subclasses {@link Result.ChainResult}, {@link
      * Result.ChainPromise}, and {@link Result.ChainProgress}.
@@ -297,7 +297,7 @@ public final class Result<T, E extends Exception> {
      * @param <E>  the result error type
      * @param <R>  the return type
      */
-    public static abstract class Chain<T1, E extends Exception, R> implements me.tatarka.ipromise.Chain<Result<T1, E>, R> {
+    public static abstract class Chain<T1, E extends Exception, R> implements me.tatarka.ipromise.func.Chain<Result<T1, E>, R> {
         @Override
         public final R chain(Result<T1, E> result) {
             if (result.isSuccess()) {
@@ -325,7 +325,7 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Result#onSuccess(me.tatarka.ipromise.Chain)} that gives you a
+     * A listener to use for {@link Result#onSuccess(me.tatarka.ipromise.func.Chain)} that gives you a
      * callback for a successful value.
      *
      * @param <T1> the type of the original result  success value
@@ -341,7 +341,7 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Promise#then(me.tatarka.ipromise.Chain)} that gives you a
+     * A listener to use for {@link Promise#then(me.tatarka.ipromise.func.Chain)} that gives you a
      * callback for a successful value.
      *
      * @param <T1> the type of the original result  success value

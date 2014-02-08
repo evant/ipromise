@@ -1,4 +1,4 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.buffer;
 
 import java.util.ArrayList;
 import java.util.Iterator;

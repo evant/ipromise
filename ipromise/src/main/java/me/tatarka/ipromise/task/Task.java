@@ -1,4 +1,9 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.task;
+
+import me.tatarka.ipromise.CancelToken;
+import me.tatarka.ipromise.Deferred;
+import me.tatarka.ipromise.Promise;
+import me.tatarka.ipromise.Result;
 
 /**
  * A way to control an async operation.

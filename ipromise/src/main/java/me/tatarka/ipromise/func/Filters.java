@@ -1,4 +1,4 @@
-package me.tatarka.ipromise;
+package me.tatarka.ipromise.func;
 
 import java.util.HashSet;
 import java.util.Set;
