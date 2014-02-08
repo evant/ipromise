@@ -5,11 +5,10 @@ import android.os.Looper;
 
 import java.lang.ref.WeakReference;
 
-import me.tatarka.ipromise.Async;
 import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.CloseListener;
-import me.tatarka.ipromise.Closeable;
 import me.tatarka.ipromise.Listener;
+import me.tatarka.ipromise.Promise;
 import me.tatarka.ipromise.Task;
 
 /**
@@ -42,9 +41,9 @@ public class AsyncItem<T> {
             if (result != null) callback.receive(result);
         }
 
-        Async<T> async = manager.get(tag);
-        if (async != null) {
-            setupCallback(async);
+        Promise<T> promise = manager.get(tag);
+        if (promise != null) {
+            setupCallback(promise);
         }
     }
 
@@ -54,13 +53,13 @@ public class AsyncItem<T> {
      * @return the {@code AsyncItem} for chaining
      */
     public AsyncItem<T> start() {
-        Async<T> async = manager.get(tag);
-        if (async == null) {
-            async = task.start();
-            manager.put(tag, async);
+        Promise<T> promise = manager.get(tag);
+        if (promise == null) {
+            promise = task.start();
+            manager.put(tag, promise);
         }
 
-        setupCallback(async);
+        setupCallback(promise);
         return this;
     }
 
@@ -70,15 +69,15 @@ public class AsyncItem<T> {
      * @return the {@code AsyncItem} for chaining
      */
     public AsyncItem<T> restart() {
-        Async<T> async = manager.get(tag);
-        if (async != null) {
-            async.cancelToken().cancel();
+        Promise<T> promise = manager.get(tag);
+        if (promise != null) {
+            promise.cancelToken().cancel();
         }
-        async = task.start();
-        manager.put(tag, async);
+        promise = task.start();
+        manager.put(tag, promise);
 
         isSetup = false;
-        setupCallback(async);
+        setupCallback(promise);
         return this;
     }
 
@@ -88,9 +87,9 @@ public class AsyncItem<T> {
      * @return true if the task was started, false otherwise
      */
     public boolean cancel() {
-        Async async = manager.get(tag);
-        if (async != null) {
-            async.cancelToken().cancel();
+        Promise promise = manager.get(tag);
+        if (promise != null) {
+            promise.cancelToken().cancel();
             return true;
         }
         return false;
@@ -102,18 +101,18 @@ public class AsyncItem<T> {
      * @return true if the task is running, false otherwise
      */
     public boolean isRunning() {
-        Async async = manager.get(tag);
-        return async != null && async.isRunning();
+        Promise promise = manager.get(tag);
+        return promise != null && promise.isRunning();
     }
 
     /**
-     * Returns if the task is closed. This is only valid for {@link me.tatarka.ipromise.Progress}.
+     * Returns if the task is closed. This is only valid for {@link me.tatarka.ipromise.Promise}.
      *
      * @return true if the task is closed, false otherwise
      */
     public boolean isClosed() {
-        Async async = manager.get(tag);
-        return async != null && async instanceof Closeable && ((Closeable) async).isClosed();
+        Promise promise = manager.get(tag);
+        return promise != null && promise.isClosed();
     }
 
     /**
@@ -122,11 +121,11 @@ public class AsyncItem<T> {
      * @return true if the task is canceled, false otherwise
      */
     public boolean isCanceled() {
-        Async async = manager.get(tag);
-        return async != null && async.cancelToken().isCanceled();
+        Promise promise = manager.get(tag);
+        return promise != null && promise.cancelToken().isCanceled();
     }
 
-    private void setupCallback(Async<T> async) {
+    private void setupCallback(Promise<T> promise) {
         if (!isSetup) {
             isSetup = true;
 
@@ -134,33 +133,33 @@ public class AsyncItem<T> {
                 manager.save(tag, saveCallback);
             }
 
-            if (async.isRunning()) {
+            if (promise.isRunning()) {
                 if (callback != null) callback.start();
-            } else if (async instanceof Closeable && ((Closeable) async).isClosed()) {
+            } else if (promise.isClosed()) {
                 if (callback != null) callback.end();
             }
         }
 
-        setupListen(async);
+        setupListen(promise);
     }
 
-    private void setupListen(Async<T> async) {
+    private void setupListen(Promise<T> promise) {
         if (!isListen) {
             isListen = true;
-            setupListen(this, async);
+            setupListen(this, promise);
         }
     }
 
-    private static <T> void setupListen(AsyncItem<T> item, final Async<T> async) {
+    private static <T> void setupListen(AsyncItem<T> item, final Promise<T> promise) {
         final WeakReference<AsyncItem<T>> managerRef = new WeakReference<AsyncItem<T>>(item);
 
-        async.listen(new Listener<T>() {
+        promise.listen(new Listener<T>() {
             @Override
             public void receive(final T result) {
                 AsyncItem<T> item = managerRef.get();
                 if (item == null) return;
 
-                runOnUI(item.handler, async, new Runnable() {
+                runOnUI(item.handler, promise, new Runnable() {
                     @Override
                     public void run() {
                         AsyncItem<T> item = managerRef.get();
@@ -171,32 +170,30 @@ public class AsyncItem<T> {
             }
         });
 
-        if (async instanceof Closeable) {
-            ((Closeable) async).onClose(new CloseListener() {
-                @Override
-                public void close() {
-                    AsyncItem<T> item = managerRef.get();
-                    if (item == null) return;
+        promise.onClose(new CloseListener() {
+            @Override
+            public void close() {
+                AsyncItem<T> item = managerRef.get();
+                if (item == null) return;
 
-                    runOnUI(item.handler, async, new Runnable() {
-                        @Override
-                        public void run() {
-                            AsyncItem<T> item = managerRef.get();
-                            if (item == null || item.callback == null) return;
-                            item.callback.end();
-                        }
-                    });
-                }
-            });
-        }
+                runOnUI(item.handler, promise, new Runnable() {
+                    @Override
+                    public void run() {
+                        AsyncItem<T> item = managerRef.get();
+                        if (item == null || item.callback == null) return;
+                        item.callback.end();
+                    }
+                });
+            }
+        });
     }
 
-    private static <T> void runOnUI(final Handler handler, Async<T> async, final Runnable runnable) {
+    private static <T> void runOnUI(final Handler handler, Promise<T> promise, final Runnable runnable) {
         // Already on main thread, just call
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
             runnable.run();
         } else {
-            async.cancelToken().listen(new CancelToken.Listener() {
+            promise.cancelToken().listen(new CancelToken.Listener() {
                 @Override
                 public void canceled() {
                     handler.removeCallbacks(runnable);

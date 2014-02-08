@@ -1,14 +1,14 @@
 package me.tatarka.ipromise.android;
 
-import me.tatarka.ipromise.Async;
+import me.tatarka.ipromise.Promise;
 
 /**
  * @author Evan Tatarka
  */
 interface IAsyncManager {
-    <T> Async<T> get(String tag);
+    <T> Promise<T> get(String tag);
 
-    <T> void put(String tag, Async<T> async);
+    <T> void put(String tag, Promise<T> async);
 
     void cancelAll();
 

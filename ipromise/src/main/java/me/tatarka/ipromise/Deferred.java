@@ -29,6 +29,22 @@ public class Deferred<T> {
         promise = new Promise<T>(cancelToken);
     }
 
+    public Deferred(PromiseBufferFactory bufferFactor) {
+        promise = new Promise<T>(bufferFactor);
+    }
+
+    public Deferred(int bufferType) {
+        promise = new Promise<T>(PromiseBuffers.ofType(bufferType));
+    }
+
+    public Deferred(int bufferType, CancelToken cancelToken) {
+        promise = new Promise<T>(PromiseBuffers.ofType(bufferType));
+    }
+
+    public Deferred(PromiseBufferFactory bufferFactory, CancelToken cancelToken) {
+        promise = new Promise<T>(bufferFactory, cancelToken);
+    }
+
     /**
      * The deferred's {@link me.tatarka.ipromise.Promise}.
      *
@@ -38,15 +54,28 @@ public class Deferred<T> {
         return promise;
     }
 
+    public synchronized Deferred<T> send(T result) {
+        if (promise == null) throw new Promise.AlreadyClosedException(result);
+        promise.send(result);
+        return this;
+    }
+
     /**
      * Delivers a result to all listeners of the {@code Promise}. Only one result can be delivered.
      * If the promise has already been canceled, the result will not be stored and listeners will
      * not be notified.
      *
      * @param result the result to reject.
-     * @throws Promise.AlreadyDeliveredException throws if a result has already been delivered.
+     * @throws me.tatarka.ipromise.Promise.AlreadyClosedException throws if a result has already been delivered.
      */
     public synchronized void resolve(T result) {
-        promise.deliver(result);
+        if (promise == null) throw new Promise.AlreadyClosedException(result);
+        promise.send(result);
+        promise.close();
+    }
+
+    public synchronized void close() {
+        promise.close();
+        promise = null;
     }
 }

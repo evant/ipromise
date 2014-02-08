@@ -6,11 +6,11 @@ import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 
-import me.tatarka.ipromise.Async;
 import me.tatarka.ipromise.Listener;
+import me.tatarka.ipromise.Promise;
 
 class AsyncManagerFragmentHelper implements IAsyncManager {
-    private Map<String, Async> async = new HashMap<String, Async>();
+    private Map<String, Promise> promiseMap = new HashMap<String, Promise>();
     private Map<String, SaveItem> savedResults = new HashMap<String, SaveItem>();
     private Bundle savedState;
 
@@ -20,23 +20,23 @@ class AsyncManagerFragmentHelper implements IAsyncManager {
 
     public void onDestroy() {
         cancelAll();
-        async.clear();
+        promiseMap.clear();
     }
 
     @Override
-    public <T> Async<T> get(String tag) {
-        return async.get(tag);
+    public <T> Promise<T> get(String tag) {
+        return promiseMap.get(tag);
     }
 
     @Override
-    public <T> void put(String tag, Async<T> async) {
-        this.async.put(tag, async);
+    public <T> void put(String tag, Promise<T> async) {
+        this.promiseMap.put(tag, async);
     }
 
     @Override
     public void cancelAll() {
-        for (Async async : this.async.values()) {
-            async.cancelToken().cancel();
+        for (Promise promise : promiseMap.values()) {
+            promise.cancelToken().cancel();
         }
     }
 
@@ -75,8 +75,8 @@ class AsyncManagerFragmentHelper implements IAsyncManager {
     }
 
     private void setupSaveListener(String tag, final SaveItem saveItem) {
-        Async async = get(tag);
-        async.listen(new Listener() {
+        Promise promise = get(tag);
+        promise.listen(new Listener() {
             @Override
             public void receive(Object result) {
                 saveItem.result = result;

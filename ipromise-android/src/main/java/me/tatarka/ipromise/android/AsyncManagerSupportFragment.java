@@ -4,10 +4,7 @@ package me.tatarka.ipromise.android;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import me.tatarka.ipromise.Async;
+import me.tatarka.ipromise.Promise;
 
 /**
  * Persists the task by running it in a fragment with {@code setRetainInstanceState(true)}. This is
@@ -32,13 +29,13 @@ public class AsyncManagerSupportFragment extends Fragment implements IAsyncManag
     }
 
     @Override
-    public <T> Async<T> get(String tag) {
+    public <T> Promise<T> get(String tag) {
         return helper.get(tag);
     }
 
     @Override
-    public <T> void put(String tag, Async<T> async) {
-        helper.put(tag, async);
+    public <T> void put(String tag, Promise<T> promise) {
+        helper.put(tag, promise);
     }
 
     @Override

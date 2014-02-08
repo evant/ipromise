@@ -8,9 +8,8 @@ import java.util.concurrent.Executors;
  *
  * @author Evan Tatarka
  * @see me.tatarka.ipromise.Task
- * @see me.tatarka.ipromise.ProgressTask
  */
-public class ProgressExecutorTask<T> implements ProgressTask<T> {
+public class ExecutorTask<T> implements Task<T> {
     protected Executor executor;
     protected Do<T> callback;
 
@@ -19,7 +18,7 @@ public class ProgressExecutorTask<T> implements ProgressTask<T> {
      *
      * @param callback the callback
      */
-    public ProgressExecutorTask(Do<T> callback) {
+    public ExecutorTask(Do<T> callback) {
         this(Executors.newSingleThreadExecutor(), callback);
     }
 
@@ -30,22 +29,22 @@ public class ProgressExecutorTask<T> implements ProgressTask<T> {
      * @param executor the executor
      * @param callback the callback
      */
-    public ProgressExecutorTask(Executor executor, Do<T> callback) {
+    public ExecutorTask(Executor executor, Do<T> callback) {
         this.executor = executor;
         this.callback = callback;
     }
 
     @Override
-    public Progress<T> start() {
+    public Promise<T> start() {
         final CancelToken cancelToken = new CancelToken();
-        final Channel<T> channel = new Channel<T>(cancelToken);
+        final Deferred<T> deferred = new Deferred<T>(cancelToken);
 
         executor.execute(new Runnable() {
             @Override
             public void run() {
-                callback.run(channel, cancelToken);
+                callback.run(deferred, cancelToken);
             }
         });
-        return channel.progress();
+        return deferred.promise();
     }
 }

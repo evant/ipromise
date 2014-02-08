@@ -7,11 +7,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 
-import me.tatarka.ipromise.Async;
 import me.tatarka.ipromise.CancelToken;
-import me.tatarka.ipromise.Channel;
-import me.tatarka.ipromise.Progress;
-import me.tatarka.ipromise.PromiseTask;
+import me.tatarka.ipromise.Deferred;
+import me.tatarka.ipromise.Promise;
 import me.tatarka.ipromise.Task;
 import me.tatarka.ipromise.Tasks;
 import me.tatarka.ipromise.android.AsyncAdapter;
@@ -138,12 +136,7 @@ public class MainActivity extends ActionBarActivity {
         // Progress on button press
         final AsyncItem<Integer> progressAsync = asyncManager.add(
                 PROGRESS_TASK,
-                new Task<Integer>() {
-                    @Override
-                    public Async<Integer> start() {
-                        return countProgress();
-                    }
-                },
+                Tasks.of(count),
                 new AsyncAdapter<Integer>() {
                     @Override
                     public void start() {
@@ -175,9 +168,9 @@ public class MainActivity extends ActionBarActivity {
         });
     }
 
-    private static PromiseTask.Do<String> sleep = new PromiseTask.Do<String>() {
+    private static Task.Do<String> sleep = new Task.DoOnce<String>() {
         @Override
-        public String run(CancelToken cancelToken) {
+        public String runOnce(CancelToken cancelToken) {
             cancelToken.listen(new CancelToken.Listener() {
                 @Override
                 public void canceled() {
@@ -193,27 +186,22 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
-    private static Progress<Integer> countProgress() {
-        final CancelToken cancelToken = new CancelToken();
-        final Channel<Integer> channel = new Channel<Integer>(cancelToken);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i <= 100; i += 10) {
-                    if (cancelToken.isCanceled()) {
-                        Log.d("iPromise LOG", "task canceled");
-                        return;
-                    }
-                    channel.send(i);
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+    private static Task.Do<Integer> count = new Task.Do<Integer>() {
+        @Override
+        public void run(Deferred<Integer> deferred, CancelToken cancelToken) {
+            for (int i = 0; i <= 100; i += 10) {
+                if (cancelToken.isCanceled()) {
+                    Log.d("iPromise LOG", "task canceled");
+                    return;
                 }
-                channel.close();
+                deferred.send(i);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
-        }).start();
-        return channel.progress();
-    }
+            deferred.close();
+        }
+    };
 }

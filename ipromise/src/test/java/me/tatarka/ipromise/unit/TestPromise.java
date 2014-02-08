@@ -4,12 +4,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.util.Arrays;
+
 import me.tatarka.ipromise.Chain;
 import me.tatarka.ipromise.Deferred;
+import me.tatarka.ipromise.Filters;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Map;
 import me.tatarka.ipromise.Pair;
 import me.tatarka.ipromise.Promise;
+import me.tatarka.ipromise.PromiseBuffers;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -23,7 +27,7 @@ import static org.mockito.Mockito.verify;
 public class TestPromise {
     @Test
     public void testPromiseBefore() {
-        Deferred<String> deferred = new Deferred<String>();
+        Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_LAST);
         Promise<String> promise = deferred.promise();
         String result = "success";
         Listener listener = mock(Listener.class);
@@ -34,7 +38,19 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseAfter() {
+    public void testPromiseAfterBufferNone() {
+        Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_NONE);
+        Promise<String> promise = deferred.promise();
+        String result = "success";
+        Listener listener = mock(Listener.class);
+        deferred.resolve(result);
+        promise.listen(listener);
+
+        verify(listener, never()).receive(result);
+    }
+
+    @Test
+    public void testPromiseAfterBufferLast() {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
@@ -43,6 +59,20 @@ public class TestPromise {
         promise.listen(listener);
 
         verify(listener).receive(result);
+    }
+
+    @Test
+    public void testPromiseAfterBufferAll() {
+        Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_ALL);
+        Promise<String> promise = deferred.promise();
+        String result1 = "success1";
+        String result2 = "success2";
+        Listener listener = mock(Listener.class);
+        deferred.send(result1).send(result2).close();
+        promise.listen(listener);
+
+        verify(listener).receive(result1);
+        verify(listener).receive(result2);
     }
 
     @Test
@@ -171,30 +201,51 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseOrFirst() {
+    public void testPromiseMerge() {
         Deferred<String> deferred1 = new Deferred<String>();
         Promise<String> promise1 = deferred1.promise();
         final Deferred<String> deferred2 = new Deferred<String>();
         final Promise<String> promise2 = deferred2.promise();
         String result1 = "success1";
+        String result2 = "success2";
         Listener listener = mock(Listener.class);
-        promise1.or(promise2).listen(listener);
+        promise1.merge(promise2).listen(listener);
         deferred1.resolve(result1);
+        deferred2.resolve(result2);
 
         verify(listener).receive(result1);
+        verify(listener).receive(result2);
     }
 
     @Test
-    public void testPromiseOrSecond() {
-        Deferred<String> deferred1 = new Deferred<String>();
-        Promise<String> promise1 = deferred1.promise();
-        final Deferred<String> deferred2 = new Deferred<String>();
-        final Promise<String> promise2 = deferred2.promise();
-        String result2 = "success2";
+    public void testFilter() {
+        Deferred<String> deferred = new Deferred<String>();
+        Promise<String> promise = deferred.promise();
         Listener listener = mock(Listener.class);
-        promise1.or(promise2).listen(listener);
-        deferred2.resolve(result2);
+        promise.then(Filters.equal("good")).listen(listener);
+        deferred.send("bad");
+        deferred.send("good");
 
-        verify(listener).receive(result2);
+        verify(listener, never()).receive("bad");
+        verify(listener).receive("good");
+    }
+
+    @Test
+    public void testBatch() {
+        Deferred<String> deferred = new Deferred<String>();
+        Promise<String> promise = deferred.promise();
+        Listener listener = mock(Listener.class);
+        promise.batch(2).listen(listener);
+        deferred.send("one");
+        deferred.send("two");
+        deferred.send("three");
+        deferred.send("four");
+        deferred.send("five");
+        deferred.close();
+
+        verify(listener).receive(Arrays.asList("one", "two"));
+        verify(listener).receive(Arrays.asList("three", "four"));
+        verify(listener).receive(Arrays.asList("three", "four"));
+        verify(listener).receive(Arrays.asList("five"));
     }
 }

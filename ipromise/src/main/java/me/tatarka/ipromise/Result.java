@@ -355,20 +355,4 @@ public final class Result<T, E extends Exception> {
             return new Promise<Result<T2, E>>(Result.<T2, E>error(error));
         }
     }
-
-    /**
-     * A listener to use for {@link Progress#then(me.tatarka.ipromise.Chain)} that gives you a
-     * callback for a successful value.
-     *
-     * @param <T1> the type of the original result  success value
-     * @param <T2> the type of the new result success value
-     * @param <E>  the error type
-     * @see Result.Chain
-     */
-    public static abstract class ChainProgress<T1, T2, E extends Exception> extends Chain<T1, E, Progress<Result<T2, E>>> {
-        @Override
-        protected Progress<Result<T2, E>> error(E error) {
-            return new Progress<Result<T2, E>>(Result.<T2, E>error(error));
-        }
-    }
 }

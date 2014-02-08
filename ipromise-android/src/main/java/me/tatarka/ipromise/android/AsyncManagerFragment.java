@@ -5,16 +5,8 @@ import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import me.tatarka.ipromise.Async;
-import me.tatarka.ipromise.Listener;
+import me.tatarka.ipromise.Promise;
 
 /**
  * Persists the task by running it in a fragment with {@code setRetainInstanceState(true)}. This is
@@ -40,13 +32,13 @@ public class AsyncManagerFragment extends Fragment implements IAsyncManager {
     }
 
     @Override
-    public <T> Async<T> get(String tag) {
+    public <T> Promise<T> get(String tag) {
         return helper.get(tag);
     }
 
     @Override
-    public <T> void put(String tag, Async<T> async) {
-        helper.put(tag, async);
+    public <T> void put(String tag, Promise<T> promise) {
+        helper.put(tag, promise);
     }
 
     @Override
