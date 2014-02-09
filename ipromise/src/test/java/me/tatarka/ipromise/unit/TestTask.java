@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4;
 
 import java.util.concurrent.Executor;
 
+import me.tatarka.ipromise.CallbackExecutors;
 import me.tatarka.ipromise.CancelToken;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Promise;
@@ -13,6 +14,7 @@ import me.tatarka.ipromise.Result;
 import me.tatarka.ipromise.task.Task;
 import me.tatarka.ipromise.task.Tasks;
 
+import static me.tatarka.ipromise.CallbackExecutors.sameThreadExecutor;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -23,7 +25,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(JUnit4.class)
 public class TestTask {
     static {
-       Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+        CallbackExecutors.setDefault(sameThreadExecutor());
     }
 
     @Test

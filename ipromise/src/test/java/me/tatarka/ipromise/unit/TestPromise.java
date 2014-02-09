@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 
+import me.tatarka.ipromise.CallbackExecutors;
 import me.tatarka.ipromise.Deferred;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Pair;
@@ -16,6 +17,7 @@ import me.tatarka.ipromise.func.Chain;
 import me.tatarka.ipromise.func.Filters;
 import me.tatarka.ipromise.func.Map;
 
+import static me.tatarka.ipromise.CallbackExecutors.sameThreadExecutor;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,7 +30,7 @@ import static org.mockito.Mockito.when;
 @RunWith(JUnit4.class)
 public class TestPromise {
     static {
-        Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+        CallbackExecutors.setDefault(sameThreadExecutor());
     }
 
     @Test

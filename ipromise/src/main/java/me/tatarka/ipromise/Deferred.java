@@ -3,6 +3,7 @@ package me.tatarka.ipromise;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 
+import jdk.nashorn.internal.codegen.CompilerConstants;
 import me.tatarka.ipromise.buffer.PromiseBuffer;
 import me.tatarka.ipromise.buffer.PromiseBuffers;
 
@@ -21,7 +22,7 @@ public class Deferred<T> {
      * Constructs a new {@code Deferred}.
      */
     public Deferred() {
-        this(PromiseBuffers.<T>last(), new CancelToken(), Promise.getDefaultCallbackExecutor());
+        this(PromiseBuffers.<T>last(), new CancelToken(), CallbackExecutors.getDefault());
     }
 
     /**
@@ -32,7 +33,7 @@ public class Deferred<T> {
      * @param cancelToken the cancel token
      */
     public Deferred(CancelToken cancelToken) {
-        this(PromiseBuffers.<T>last(), cancelToken, Promise.getDefaultCallbackExecutor());
+        this(PromiseBuffers.<T>last(), cancelToken, CallbackExecutors.getDefault());
     }
 
     /**
@@ -43,7 +44,7 @@ public class Deferred<T> {
      * @param buffer the promise buffer
      */
     public Deferred(PromiseBuffer<T> buffer) {
-        this(buffer, new CancelToken(), Promise.getDefaultCallbackExecutor());
+        this(buffer, new CancelToken(), CallbackExecutors.getDefault());
     }
 
     /**
@@ -57,7 +58,7 @@ public class Deferred<T> {
      * @param cancelToken the cancel token
      */
     public Deferred(PromiseBuffer<T> buffer, CancelToken cancelToken) {
-        this(buffer, cancelToken, Promise.getDefaultCallbackExecutor());
+        this(buffer, cancelToken, CallbackExecutors.getDefault());
     }
 
     /**
@@ -70,7 +71,7 @@ public class Deferred<T> {
      * @param bufferType the promise buffer
      */
     public Deferred(int bufferType) {
-        this(PromiseBuffers.<T>ofType(bufferType), new CancelToken(), Promise.getDefaultCallbackExecutor());
+        this(PromiseBuffers.<T>ofType(bufferType), new CancelToken(), CallbackExecutors.getDefault());
     }
 
     /**
@@ -85,7 +86,7 @@ public class Deferred<T> {
      * @param cancelToken the cancel token
      */
     public Deferred(int bufferType, CancelToken cancelToken) {
-        this(PromiseBuffers.<T>ofType(bufferType), cancelToken, Promise.getDefaultCallbackExecutor());
+        this(PromiseBuffers.<T>ofType(bufferType), cancelToken, CallbackExecutors.getDefault());
     }
 
     /**
@@ -95,13 +96,13 @@ public class Deferred<T> {
      * when a {@link me.tatarka.ipromise.Listener} is attached. When the token is canceled, this
      * deferred's {@code Promise} is also canceled. The callback executor is used to run the {@link
      * Promise#listen(Listener)}  and {@link Promise#onClose(CloseListener)} callbacks. The default
-     * is to run callbacks on a single background thread. See {@link Promise#setDefaultCallbackExecutor(java.util.concurrent.Executor)}
+     * is to run callbacks on a single background thread. See {@link me.tatarka.ipromise.CallbackExecutors]
      * for more details.
      *
      * @param buffer           the promise buffer
      * @param cancelToken      the cancel token
      * @param callbackExecutor the callback executor
-     * @see Promise#setDefaultCallbackExecutor(java.util.concurrent.Executor)
+     * @see me.tatarka.ipromise.CallbackExecutors
      */
     public Deferred(PromiseBuffer<T> buffer, CancelToken cancelToken, Executor callbackExecutor) {
         promise = new ValuePromise<T>(buffer, cancelToken, callbackExecutor);
@@ -326,7 +327,7 @@ public class Deferred<T> {
          * me.tatarka.ipromise.CancelToken)
          */
         public <T> Deferred<T> build(PromiseBuffer<T> buffer, CancelToken cancelToken) {
-            if (callbackExecutor == null) callbackExecutor = Promise.getDefaultCallbackExecutor();
+            if (callbackExecutor == null) callbackExecutor = CallbackExecutors.getDefault();
             return new Deferred<T>(buffer, cancelToken, callbackExecutor);
         }
     }

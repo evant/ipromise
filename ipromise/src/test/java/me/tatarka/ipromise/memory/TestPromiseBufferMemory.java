@@ -4,13 +4,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import me.tatarka.ipromise.CallbackExecutors;
 import me.tatarka.ipromise.Deferred;
 import me.tatarka.ipromise.Promise;
+
+import static me.tatarka.ipromise.CallbackExecutors.sameThreadExecutor;
 
 @RunWith(JUnit4.class)
 public class TestPromiseBufferMemory {
     static {
-        Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+        CallbackExecutors.setDefault(sameThreadExecutor());
     }
 
     @Test

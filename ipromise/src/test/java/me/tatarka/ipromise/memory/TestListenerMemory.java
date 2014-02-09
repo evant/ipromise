@@ -4,14 +4,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import javax.swing.DefaultCellEditor;
+
+import me.tatarka.ipromise.CallbackExecutors;
 import me.tatarka.ipromise.Deferred;
 import me.tatarka.ipromise.Listener;
 import me.tatarka.ipromise.Promise;
 
+import static me.tatarka.ipromise.CallbackExecutors.sameThreadExecutor;
+
 @RunWith(JUnit4.class)
 public class TestListenerMemory {
     static {
-        Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+        CallbackExecutors.setDefault(sameThreadExecutor());
     }
 
     @Test

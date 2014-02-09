@@ -66,7 +66,7 @@ This library has a few unique features to give you control over your
 asynchronous code.
 
 1. You can send multiple messages to show progress, etc.
-2. Error control is out not backed in to the promises. Instead you can
+2. Error control is out not baked in to the promises. Instead you can
 represent errors using a `Result<T,E>`. This way you are free to use promises
 in contexts where you know an Exception will never be thrown.
 3. You can control how messages are buffered for redelivery when a listener is
@@ -311,7 +311,7 @@ For the common cases you can pass in an enumeration.
 - `Proimse.BUFFER_NONE` - This means that if there is no listener when a message
   is sent, the message is dropped.
 - `Promise.BUFFER_LAST` - This means the last message is saved. This is the
-- default since it acts like most promise implementations when one message is
+  default since it acts like most promise implementations when one message is
   sent.
 - `Progress.REATIN_ALL` - This means all messages are saved.
 
@@ -370,8 +370,8 @@ reason about since their execution context is always the same. By default all
 callbacks are executed on a single background thread, but you can configure this
 is a few different ways.
 
-The easiest way is to call `Promise.setDefaultCallbackExecutor(executor)` which
-sets it globally for all promises. This should only be called once for you
+The easiest way is to call `CallbackExecutors.setDefault(executor)` which sets
+it globally for all promises. This should only be called once for you
 application, though this is not enforced. If you need more granular control you
 can create a builder with `Deferred.Builder.withCallbackExecutor(executor)` and
 then call `build()` to get a deferred with your `Executor`. Finally, `Deferred`
@@ -382,12 +382,12 @@ same order they are posted for a given `Promise`. If you don't you risk the
 callbacks being fired in an unexpected order.
 
 For Android, it's a good idea to use the provided
-`AndroidPromiseExecutors.mainLooperCallbackExecutor()` which will run all
+`AndroidCallbackExecutors.mainLooperExecutor()` which will run all
 callbacks on the UI thread.
 
-For unit testing, you can use `Promise.getSameThreadExecutor()` to run callbacks
-on the same thread as the messages that are sent. This way you can send a
-message and ensure the callback is called without using any thread
+For unit testing, you can use `CallbackExecutors.sameThreadExecutor()` to run
+callbacks on the same thread as the messages that are sent. This way you can
+send a message and ensure the callback is called without using any thread
 synchronization.
 
 Android
