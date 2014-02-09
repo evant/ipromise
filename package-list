@@ -1,2 +1,5 @@
 me.tatarka.ipromise
+me.tatarka.ipromise.buffer
 me.tatarka.ipromise.compat
+me.tatarka.ipromise.func
+me.tatarka.ipromise.task
