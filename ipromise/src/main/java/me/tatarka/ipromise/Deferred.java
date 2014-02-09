@@ -96,7 +96,7 @@ public class Deferred<T> {
      * when a {@link me.tatarka.ipromise.Listener} is attached. When the token is canceled, this
      * deferred's {@code Promise} is also canceled. The callback executor is used to run the {@link
      * Promise#listen(Listener)}  and {@link Promise#onClose(CloseListener)} callbacks. The default
-     * is to run callbacks on a single background thread. See {@link me.tatarka.ipromise.CallbackExecutors]
+     * is to run callbacks on a single background thread. See {@link me.tatarka.ipromise.CallbackExecutors}
      * for more details.
      *
      * @param buffer           the promise buffer
@@ -211,7 +211,7 @@ public class Deferred<T> {
      * all methods return a new instance. For now the callback executor is the only thing that you
      * can configure.
      *
-     * @see Promise#setDefaultCallbackExecutor(java.util.concurrent.Executor)
+     * @see me.tatarka.ipromise.CallbackExecutors
      */
     public static class Builder {
         private Executor callbackExecutor;
@@ -237,7 +237,7 @@ public class Deferred<T> {
          *
          * @param callbackExecutor the callback executor
          * @return the builder
-         * @see Promise#setDefaultCallbackExecutor(java.util.concurrent.Executor)
+         * @see me.tatarka.ipromise.CallbackExecutors
          */
         public static Builder withCallbackExecutor(Executor callbackExecutor) {
             return new Builder().callbackExecutor(callbackExecutor);
@@ -248,7 +248,7 @@ public class Deferred<T> {
          *
          * @param callbackExecutor the callback executor
          * @return the new builder
-         * @see Promise#setDefaultCallbackExecutor(java.util.concurrent.Executor)
+         * @see me.tatarka.ipromise.CallbackExecutors
          */
         public Builder callbackExecutor(Executor callbackExecutor) {
             Builder builder = new Builder(this);
