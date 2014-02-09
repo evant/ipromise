@@ -5,6 +5,7 @@ package me.tatarka.ipromise.func;
  *
  * @param <T1> the type of the original {@code Promise} result
  * @param <T2> the type of the new {@code Promise} result
+ * @author Evan Tatarka
  * @see me.tatarka.ipromise.Promise#then(Map)
  */
 public interface Map<T1, T2> {

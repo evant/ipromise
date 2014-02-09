@@ -9,6 +9,7 @@ import me.tatarka.ipromise.Result;
  * A way to control an async operation.
  *
  * @param <T> the result type
+ * @author Evan Tatarka
  */
 public interface Task<T> {
     /**

@@ -10,13 +10,17 @@ import me.tatarka.ipromise.Promise;
 
 @RunWith(JUnit4.class)
 public class TestListenerMemory {
+    static {
+        Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+    }
+
     @Test
     public void testPromiseListenersClearedOnCallback() {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         Listener<String> listener = new Listener<String>() {
             @Override
-            public void receive(String result) {
+            public void receive(String message) {
 
             }
         };
@@ -34,7 +38,7 @@ public class TestListenerMemory {
         Promise<String> promise = deferred.promise();
         Listener<String> listener = new Listener<String>() {
             @Override
-            public void receive(String result) {
+            public void receive(String message) {
 
             }
         };
@@ -52,7 +56,7 @@ public class TestListenerMemory {
         Promise<String> promise = deferred.promise();
         Listener<String> listener = new Listener<String>() {
             @Override
-            public void receive(String result) {
+            public void receive(String message) {
 
             }
         };
@@ -71,7 +75,7 @@ public class TestListenerMemory {
         Promise<String> promise = deferred.promise();
         Listener<String> listener = new Listener<String>() {
             @Override
-            public void receive(String result) {
+            public void receive(String message) {
 
             }
         };

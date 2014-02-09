@@ -155,7 +155,7 @@ public class AsyncItem<T> {
 
         promise.listen(new Listener<T>() {
             @Override
-            public void receive(final T result) {
+            public void receive(final T message) {
                 AsyncItem<T> item = managerRef.get();
                 if (item == null) return;
 
@@ -164,7 +164,7 @@ public class AsyncItem<T> {
                     public void run() {
                         AsyncItem<T> item = managerRef.get();
                         if (item == null || item.callback == null) return;
-                        item.callback.receive(result);
+                        item.callback.receive(message);
                     }
                 });
             }

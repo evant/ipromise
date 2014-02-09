@@ -213,20 +213,19 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Promise#listen(me.tatarka.ipromise.Listener)} or {@link
-     * Progress#listen(me.tatarka.ipromise.Listener)} that gives two callbacks for success and
-     * failure instead of just one. You may override one or both.
+     * A listener to use for {@link Promise#listen(me.tatarka.ipromise.Listener)} or that gives two
+     * callbacks for success and failure instead of just one. You may override one or both.
      *
      * @param <T> the success type
      * @param <E> the error type
      */
     public static abstract class Listener<T, E extends Exception> implements me.tatarka.ipromise.Listener<Result<T, E>> {
         @Override
-        public final void receive(Result<T, E> result) {
-            if (result.isSuccess()) {
-                success(result.getSuccess());
+        public final void receive(Result<T, E> message) {
+            if (message.isSuccess()) {
+                success(message.getSuccess());
             } else {
-                error(result.getError());
+                error(message.getError());
             }
         }
 
@@ -248,9 +247,8 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Promise#then(me.tatarka.ipromise.func.Map)} or {@link
-     * Progress#then(me.tatarka.ipromise.func.Map)} that gives two callbacks for success and failure
-     * instead of just one.
+     * A listener to use for {@link Promise#then(me.tatarka.ipromise.func.Map)} that gives two
+     * callbacks for success and failure instead of just one.
      *
      * @param <T1> the type of the original result success value
      * @param <T2> the type of the new result success value
@@ -287,11 +285,10 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Promise#then(me.tatarka.ipromise.func.Chain)} or {@link
-     * Progress#then(me.tatarka.ipromise.func.Chain)} that gives two callbacks for success and failure.
-     * With this class you must implement them both. If you don't need to change the error value,
-     * you should use the more specific subclasses {@link Result.ChainResult}, {@link
-     * Result.ChainPromise}, and {@link Result.ChainProgress}.
+     * A listener to use for {@link Promise#then(me.tatarka.ipromise.func.Chain)} that gives two
+     * callbacks for success and failure. With this class you must implement them both. If you don't
+     * need to change the error value, you should use the more specific subclasses {@link
+     * Result.ChainResult} and {@link Result.ChainPromise}.
      *
      * @param <T1> the result success type
      * @param <E>  the result error type
@@ -325,8 +322,8 @@ public final class Result<T, E extends Exception> {
     }
 
     /**
-     * A listener to use for {@link Result#onSuccess(me.tatarka.ipromise.func.Chain)} that gives you a
-     * callback for a successful value.
+     * A listener to use for {@link Result#onSuccess(me.tatarka.ipromise.func.Chain)} that gives you
+     * a callback for a successful value.
      *
      * @param <T1> the type of the original result  success value
      * @param <T2> the type of the new result success value

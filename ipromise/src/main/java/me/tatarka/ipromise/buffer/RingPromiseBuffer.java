@@ -8,12 +8,23 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 
-import me.tatarka.ipromise.buffer.PromiseBuffer;
-
+/**
+ * A {@link me.tatarka.ipromise.buffer.PromiseBuffer} that stores a given number of messages and
+ * then starts replacing the oldest ones.
+ *
+ * @param <T> the message type
+ * @author Evan Tatarka
+ */
 public class RingPromiseBuffer<T> implements PromiseBuffer<T> {
     private int capacity;
     private CircularArrayList<T> buffer;
 
+    /**
+     * Creates a buffer with the given capacity. When the buffer is at capacity and another message
+     * is sent, it will replace the oldest one.
+     *
+     * @param capacity the buffer's capacity
+     */
     public RingPromiseBuffer(int capacity) {
         if (capacity < 0) {
             throw new IllegalArgumentException("Invalid capacity: " + capacity + ", must be non-negative");

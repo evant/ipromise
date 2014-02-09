@@ -9,6 +9,10 @@ import me.tatarka.ipromise.Promise;
 
 @RunWith(JUnit4.class)
 public class TestPromiseBufferMemory {
+    static {
+        Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+    }
+
     @Test
     public void testBufferRetainNone() {
         TestMessage message = new TestMessage();

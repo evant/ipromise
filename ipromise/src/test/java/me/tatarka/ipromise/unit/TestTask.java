@@ -22,6 +22,10 @@ import static org.mockito.Mockito.verify;
  */
 @RunWith(JUnit4.class)
 public class TestTask {
+    static {
+       Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+    }
+
     @Test
     public void testTaskRun() {
         final String result = "result";

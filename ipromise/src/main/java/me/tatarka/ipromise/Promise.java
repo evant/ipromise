@@ -14,13 +14,10 @@ import me.tatarka.ipromise.func.Map;
 /**
  * A promise is a way to return a result the will be fulfilled sometime in the future. This fixes
  * the inversion of control that callback-style functions creates and restores the composeability of
- * return values.
- * <p/>
- * In addition to creating a standard interface for all asynchronous functions, Promises can also
- * more-robustly handle error and cancellation situations.
- * <p/>
- * You cannot construct a {@code Promise} directly, instead you must get one from a {@link
- * Deferred}. That is, unless the result is already available.
+ * return values. <p/> In addition to creating a standard interface for all asynchronous functions,
+ * Promises can also more-robustly handle error and cancellation situations. <p/> You cannot
+ * construct a {@code Promise} directly, instead you must get one from a {@link Deferred}. That is,
+ * unless the result is already available.
  *
  * @author Evan Tatarka
  * @see Deferred
@@ -34,21 +31,56 @@ public class Promise<T> {
     private static Executor sameThreadCallbackExecutor;
 
     private CancelToken cancelToken;
-    private Executor callbackExecutor;
     private boolean isClosed;
 
+    protected final Executor callbackExecutor;
     protected final List<Listener<T>> listeners = new ArrayList<Listener<T>>();
     protected final List<CloseListener> closeListeners = new ArrayList<CloseListener>();
 
-    public static Executor getDefaultCallbackExecutor() {
-        if (defaultCallbackExecutor == null) defaultCallbackExecutor = Executors.newSingleThreadExecutor();
-        return defaultCallbackExecutor;
-    }
-
+    /**
+     * <p> Sets the default callback executor used to run the {@link Promise#listen(Listener)} and
+     * {@link Promise#onClose(CloseListener)} callbacks. The default is to run callbacks on a single
+     * background thread. This is important to give consistency in what execution context the
+     * callbacks are run in. It can also be uses to simplify you threading model, e.x. you could
+     * post all callbacks to the UI thread. If you want more information on why this is a good idea,
+     * see <a href="http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/">this
+     * blog post</a>. </p>
+     *
+     * <p> <b>Important:</b> The given executor must preserve the order of tasks given to it for a
+     * given {@code Promise}. Otherwise you will run into unexpected behavior like messages arriving
+     * out of order and your promise closing before all messages arrive. </p>
+     *
+     * <p> You should only set this once for your application (though not enforced). If you want
+     * more granular control, use {@link me.tatarka.ipromise.Deferred.Builder#callbackExecutor(java.util.concurrent.Executor)}
+     * or {@link Deferred#Deferred(me.tatarka.ipromise.buffer.PromiseBuffer, CancelToken,
+     * java.util.concurrent.Executor)}. </p>
+     *
+     * @param callbackExecutor the callback executor
+     */
     public static void setDefaultCallbackExecutor(Executor callbackExecutor) {
         defaultCallbackExecutor = callbackExecutor;
     }
 
+    /**
+     * Returns the the default callback executor that executors all callbacks in a single background
+     * thread.
+     *
+     * @return the default callback executor
+     */
+    public static Executor getDefaultCallbackExecutor() {
+        if (defaultCallbackExecutor == null)
+            defaultCallbackExecutor = Executors.newSingleThreadExecutor();
+        return defaultCallbackExecutor;
+    }
+
+    /**
+     * Returns an executor that runs all callbacks in the same thread that they were sent from.
+     * While this is not a good idea in you application code, it is nice to set this in unit tests
+     * so that you can have the callback run immediately and not have to worry about synchronizing
+     * threads.
+     *
+     * @return the callback executor
+     */
     public static Executor getSameThreadCallbackExecutor() {
         if (sameThreadCallbackExecutor == null) sameThreadCallbackExecutor = new Executor() {
             @Override
@@ -92,6 +124,7 @@ public class Promise<T> {
      * Deferred}.
      *
      * @param message the message to send
+     * @throws AlreadyClosedException thrown if the {@code Promise} has already been closed
      */
     synchronized void send(T message) {
         if (cancelToken.isCanceled()) return;
@@ -100,11 +133,11 @@ public class Promise<T> {
         onSend(message);
 
         for (Listener<T> listener : listeners) {
-            dispatch(listener, message);
+            dispatch(callbackExecutor, listener, message);
         }
     }
 
-    void dispatch(final Listener<T> listener, final T message) {
+    static <T> void dispatch(Executor callbackExecutor, final Listener<T> listener, final T message) {
         callbackExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -113,7 +146,7 @@ public class Promise<T> {
         });
     }
 
-    void dispatchClose(final CloseListener listener) {
+    static void dispatchClose(Executor callbackExecutor, final CloseListener listener) {
         callbackExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -122,7 +155,8 @@ public class Promise<T> {
         });
     }
 
-    protected void onSend(T message) {}
+    protected void onSend(T message) {
+    }
 
     /**
      * Notifies the {@code Promise} that no more messages will be sent. This is used internally by
@@ -133,7 +167,7 @@ public class Promise<T> {
         listeners.clear();
 
         for (CloseListener listener : closeListeners) {
-            dispatchClose(listener);
+            dispatchClose(callbackExecutor, listener);
         }
         closeListeners.clear();
     }
@@ -190,7 +224,8 @@ public class Promise<T> {
         return this;
     }
 
-    protected void onListen(Listener<T> listener) {}
+    protected void onListen(Listener<T> listener) {
+    }
 
     /**
      * Listens to a {@code Promise}, receiving a callback when it is closed, i.e. it wont receive
@@ -204,7 +239,7 @@ public class Promise<T> {
         if (listener == null) return this;
 
         if (isClosed) {
-            dispatchClose(listener);
+            dispatchClose(callbackExecutor, listener);
         } else {
             closeListeners.add(listener);
         }
@@ -225,8 +260,8 @@ public class Promise<T> {
         final Promise<T2> newPromise = new Promise<T2>(this);
         listen(new Listener<T>() {
             @Override
-            public void receive(T result) {
-                newPromise.send(map.map(result));
+            public void receive(T message) {
+                newPromise.send(map.map(message));
             }
         });
         return newPromise;
@@ -235,19 +270,20 @@ public class Promise<T> {
     /**
      * Constructs a new {@code Promise} that chains two promises in succession.
      *
-     * @param chain the {@link me.tatarka.ipromise.func.Chain} that constructs the second {@code Promise}
+     * @param chain the {@link me.tatarka.ipromise.func.Chain} that constructs the second {@code
+     *              Promise}
      * @param <T2>  the type of the second {@code Promise} result
      * @return the new {@code Promise}
      */
-    public synchronized  <T2> Promise<T2> then(final Chain<T, Promise<T2>> chain) {
+    public synchronized <T2> Promise<T2> then(final Chain<T, Promise<T2>> chain) {
         final Promise<T2> newPromise = new Promise<T2>(this);
         listen(new Listener<T>() {
             @Override
-            public void receive(T result) {
-                chain.chain(result).listen(new Listener<T2>() {
+            public void receive(T message) {
+                chain.chain(message).listen(new Listener<T2>() {
                     @Override
-                    public void receive(T2 result) {
-                        newPromise.send(result);
+                    public void receive(T2 message) {
+                        newPromise.send(message);
                     }
                 });
             }
@@ -267,9 +303,9 @@ public class Promise<T> {
         final Promise<T> newPromise = new Promise<T>(this);
         listen(new Listener<T>() {
             @Override
-            public void receive(T result) {
-                if (filter.filter(result)) {
-                    newPromise.send(result);
+            public void receive(T message) {
+                if (filter.filter(message)) {
+                    newPromise.send(message);
                 }
             }
         });
@@ -280,8 +316,8 @@ public class Promise<T> {
      * Constructs a new {@code Promise} that batches the messages of this {@code Promise}.
      *
      * @param size the batch's size. The new {@code Promise} will be called every time this many
-     *             messages are sent, and again with the remaining messages when the {@code
-     *             Promise} is closed.
+     *             messages are sent, and again with the remaining messages when the {@code Promise}
+     *             is closed.
      * @return the new {@code Promise}
      */
     public synchronized Promise<List<T>> batch(final int size) {
@@ -289,8 +325,8 @@ public class Promise<T> {
         final List<T> batchedItems = new ArrayList<T>();
         listen(new Listener<T>() {
             @Override
-            public void receive(T result) {
-                batchedItems.add(result);
+            public void receive(T message) {
+                batchedItems.add(message);
                 if (batchedItems.size() >= size) {
                     newPromise.send(new ArrayList<T>(batchedItems));
                     batchedItems.clear();
@@ -351,9 +387,9 @@ public class Promise<T> {
             CancelToken.join(newPromise.cancelToken, promises[index].cancelToken);
             promises[index].listen(new Listener() {
                 @Override
-                public void receive(Object result) {
+                public void receive(Object message) {
                     synchronized (lock) {
-                        results.set(index, result);
+                        results.set(index, message);
                         int done = count.incrementAndGet();
 
                         if (done >= size.get()) {
@@ -421,8 +457,8 @@ public class Promise<T> {
 
             promise.listen(new Listener<T>() {
                 @Override
-                public void receive(T result) {
-                    newPromise.send(result);
+                public void receive(T message) {
+                    newPromise.send(message);
                 }
             }).onClose(new CloseListener() {
                 @Override
@@ -450,52 +486,6 @@ public class Promise<T> {
         return (Promise<T2>) this;
     }
 
-    private class NextListener implements Listener<T>, CloseListener, CancelToken.Listener {
-        T message;
-        boolean success;
-        boolean failure;
-
-        @Override
-        public synchronized void receive(T result) {
-            message = result;
-            success = true;
-            notifyAll();
-        }
-
-        public synchronized T getNext() throws CancelException, CloseException, InterruptedException {
-            if (success) {
-                success = false;
-                return message;
-            } else if (isCanceled()) {
-                throw new CancelException();
-            } else if (isClosed()) {
-                throw new CloseException();
-            }
-
-            wait();
-
-            if (success) {
-                success = false;
-                return message;
-            } else {
-                if (isCanceled()) throw new CancelException();
-                else throw new CloseException();
-            }
-        }
-
-        @Override
-        public synchronized void close() {
-            failure = true;
-            notifyAll();
-        }
-
-        @Override
-        public synchronized void canceled() {
-            failure = true;
-            notifyAll();
-        }
-    }
-
     /**
      * The Exception thrown if a result has already been delivered and a second result is attempted
      * to be delivered.
@@ -503,29 +493,6 @@ public class Promise<T> {
     public static class AlreadyClosedException extends IllegalStateException {
         public AlreadyClosedException(Object message) {
             super(message + " cannot be sent because the promise has already been closed.");
-        }
-    }
-
-    public static class NotAvailableException extends Exception {
-        public NotAvailableException(String mesage) {
-        }
-    }
-
-    public static class CancelException extends NotAvailableException {
-        public CancelException() {
-            super("The promise has been canceled, no value is available");
-        }
-    }
-
-    public static class CloseException extends NotAvailableException {
-        public CloseException() {
-            super("The promise has been closed, no value is available");
-        }
-    }
-
-    public static class NotReadyException extends NotAvailableException {
-        public NotReadyException() {
-            super("The promise does not yet have a value");
         }
     }
 }

@@ -74,7 +74,7 @@ public class TestPromise {
         String result1 = "success1";
         String result2 = "success2";
         Listener listener = mock(Listener.class);
-        deferred.send(result1).send(result2).close();
+        deferred.resolveAll(result1, result2);
         promise.listen(listener);
 
         verify(listener).receive(result1);
@@ -229,7 +229,7 @@ public class TestPromise {
         Promise<String> promise = deferred.promise();
         Listener listener = mock(Listener.class);
         promise.then(Filters.equal("good")).listen(listener);
-        deferred.send("bad").send("good");
+        deferred.resolveAll("bad", "good");
 
         verify(listener, never()).receive("bad");
         verify(listener).receive("good");
@@ -241,12 +241,7 @@ public class TestPromise {
         Promise<String> promise = deferred.promise();
         Listener listener = mock(Listener.class);
         promise.batch(2).listen(listener);
-        deferred.send("one")
-                .send("two")
-                .send("three")
-                .send("four")
-                .send("five")
-                .close();
+        deferred.resolveAll("one", "two", "three", "four", "five");
 
         verify(listener).receive(Arrays.asList("one", "two"));
         verify(listener).receive(Arrays.asList("three", "four"));

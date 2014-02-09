@@ -78,8 +78,8 @@ class AsyncManagerFragmentHelper implements IAsyncManager {
         Promise promise = get(tag);
         promise.listen(new Listener() {
             @Override
-            public void receive(Object result) {
-                saveItem.result = result;
+            public void receive(Object message) {
+                saveItem.result = message;
             }
         });
     }

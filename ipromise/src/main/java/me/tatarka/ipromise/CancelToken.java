@@ -51,25 +51,30 @@ public final class CancelToken {
         }
     }
 
-    public static void join(CancelToken token1, CancelToken token2) {
-        final WeakReference<CancelToken> weakToken1 = new WeakReference<CancelToken>(token1);
-        final WeakReference<CancelToken> weakToken2 = new WeakReference<CancelToken>(token2);
+    /**
+     * Combines the given cancel tokens so that the first one will cancel the second and vice-versa.
+     * The join uses weak references so that one token will not stop the other from being garbage
+     * collected.
+     *
+     * @param cancelTokens the cancel tokens
+     */
+    public static void join(CancelToken... cancelTokens) {
+        final WeakReference<CancelToken>[] weakTokens = new WeakReference[cancelTokens.length];
+        for (int i = 0; i < weakTokens.length; i++) weakTokens[i] = new WeakReference<CancelToken>(cancelTokens[i]);
 
-        token1.listen(new Listener() {
-            @Override
-            public void canceled() {
-                CancelToken token2 = weakToken2.get();
-                if (token2 != null) token2.cancel();
-            }
-        });
-
-        token2.listen(new Listener() {
-            @Override
-            public void canceled() {
-                CancelToken token1 = weakToken1.get();
-                if (token1 != null) token1.cancel();
-            }
-        });
+        for (int i = 0; i < weakTokens.length; i++) {
+            final int index = i;
+            cancelTokens[i].listen(new Listener() {
+                @Override
+                public void canceled() {
+                    for (int i = 0; i < weakTokens.length; i++) {
+                        if (i == index) continue;
+                        CancelToken token = weakTokens[i].get();
+                        if (token != null) token.cancel();
+                    }
+                }
+            });
+        }
     }
 
     /**
