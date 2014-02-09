@@ -136,7 +136,7 @@ public class AsyncItem<T> {
             if (promise.isRunning()) {
                 if (callback != null) callback.start();
             } else if (promise.isClosed()) {
-                if (callback != null) callback.end();
+                if (callback != null) callback.close();
             }
         }
 
@@ -181,7 +181,7 @@ public class AsyncItem<T> {
                     public void run() {
                         AsyncItem<T> item = managerRef.get();
                         if (item == null || item.callback == null) return;
-                        item.callback.end();
+                        item.callback.close();
                     }
                 });
             }

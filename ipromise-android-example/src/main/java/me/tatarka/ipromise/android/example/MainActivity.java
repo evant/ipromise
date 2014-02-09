@@ -58,10 +58,10 @@ public class MainActivity extends ActionBarActivity {
                     }
 
                     @Override
-                    public void receive(String result) {
+                    public void receive(String message) {
                         progressLaunch.setVisibility(View.INVISIBLE);
                         buttonLaunch.setEnabled(false);
-                        buttonLaunch.setText(result + " (Launch)");
+                        buttonLaunch.setText(message + " (Launch)");
                     }
                 }
         );
@@ -78,10 +78,10 @@ public class MainActivity extends ActionBarActivity {
                     }
 
                     @Override
-                    public void receive(String result) {
+                    public void receive(String message) {
                         progressInit.setVisibility(View.INVISIBLE);
                         buttonInit.setEnabled(false);
-                        buttonInit.setText(result + " (Init)");
+                        buttonInit.setText(message + " (Init)");
                     }
                 },
                 new SaveCallback<String>() {
@@ -117,10 +117,10 @@ public class MainActivity extends ActionBarActivity {
                     }
 
                     @Override
-                    public void receive(String result) {
+                    public void receive(String message) {
                         progressRestart.setVisibility(View.INVISIBLE);
                         buttonRestart.setEnabled(true);
-                        buttonRestart.setText(result + " (restart)");
+                        buttonRestart.setText(message + " (restart)");
                     }
                 }
         );
@@ -145,13 +145,13 @@ public class MainActivity extends ActionBarActivity {
                     }
 
                     @Override
-                    public void receive(Integer result) {
-                        buttonProgress.setText("Progress running (" + result + ")");
-                        progressProgress.setProgress(result);
+                    public void receive(Integer message) {
+                        buttonProgress.setText("Progress running (" + message + ")");
+                        progressProgress.setProgress(message);
                     }
 
                     @Override
-                    public void end() {
+                    public void close() {
                         buttonProgress.setText("Restart Progress on Button Press");
                         buttonProgress.setEnabled(true);
                         progressProgress.setVisibility(View.INVISIBLE);

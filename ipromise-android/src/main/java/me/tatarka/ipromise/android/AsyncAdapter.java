@@ -13,7 +13,7 @@ public abstract class AsyncAdapter<T> implements AsyncCallback<T> {
     }
 
     @Override
-    public void end() {
+    public void close() {
 
     }
 }

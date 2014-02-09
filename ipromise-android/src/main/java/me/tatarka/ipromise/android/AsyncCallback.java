@@ -10,26 +10,26 @@ package me.tatarka.ipromise.android;
  */
 public interface AsyncCallback<T> {
     /**
-     * Called when the async operation is started with {@link AsyncItem#start()} or {@link
-     * AsyncItem#restart()}, or when there is a configuration change and the async operation has not
-     * completed. This is where you would change your UI state to show that an async operation is
-     * pending (e.x. show a progress bar).
+     * Called when the {@link me.tatarka.ipromise.task.Task} is started with {@link
+     * AsyncItem#start()} or {@link AsyncItem#restart()}, or when there is a configuration change
+     * and the {@code Task} has not completed. This is where you would change your UI state to show
+     * that an async operation is pending (e.x. show a progress bar).
      */
     void start();
 
     /**
-     * Called when the async operation has received a result, or on a configuration change when the
-     * async operation has a result. This is where you would change your UI to show the result of
-     * the async operation.
+     * Called when the {@link me.tatarka.ipromise.Promise} has received a message, or on a
+     * configuration change when the {@code Promise} has a buffered message. This is where you would
+     * change your UI to show the result of {@code Promise}.
      *
-     * @param result the result
+     * @param message the result
      */
-    void receive(T result);
+    void receive(T message);
 
     /**
-     * This is only called for a {@link me.tatarka.ipromise.Progress}. Called when the async
-     * operation has completed, or on a configuration change when the async operation has completed.
-     * This is where you would change your UI to show the completion of the async operation.
+     * Called when the {@link me.tatarka.ipromise.Promise} is closed, or on a configuration change
+     * after the {@code Promise} has been closed. This is where you would change your UI to show the
+     * completion of the {@code Promise}.
      */
-    void end();
+    void close();
 }
