@@ -28,6 +28,13 @@ public class ExecutorTask<T> implements Task<T> {
         this(new Deferred.Builder(), Executors.newSingleThreadExecutor(), callback);
     }
 
+    /**
+     * Creates a new {@code Task} that runs the given callback with the given {@link
+     * java.util.concurrent.Executor}.
+     *
+     * @param executor the executor
+     * @param callback the callback
+     */
     public ExecutorTask(Executor executor, Do<T> callback) {
         this(new Deferred.Builder(), executor, callback);
     }
@@ -36,8 +43,9 @@ public class ExecutorTask<T> implements Task<T> {
      * Creates a new {@code Task} that runs the given callback with the given {@link
      * java.util.concurrent.Executor}.
      *
-     * @param executor the executor
-     * @param callback the callback
+     * @param deferredBuilder the builder for creating the deferred
+     * @param executor        the executor
+     * @param callback        the callback
      */
     public ExecutorTask(Deferred.Builder deferredBuilder, Executor executor, Do<T> callback) {
         this.deferredBuilder = deferredBuilder;

@@ -98,8 +98,9 @@ public class Deferred<T> {
      * is to run callbacks on a single background thread. See {@link Promise#setDefaultCallbackExecutor(java.util.concurrent.Executor)}
      * for more details.
      *
-     * @param buffer      the promise buffer
-     * @param cancelToken the cancel token
+     * @param buffer           the promise buffer
+     * @param cancelToken      the cancel token
+     * @param callbackExecutor the callback executor
      * @see Promise#setDefaultCallbackExecutor(java.util.concurrent.Executor)
      */
     public Deferred(PromiseBuffer<T> buffer, CancelToken cancelToken, Executor callbackExecutor) {
@@ -158,6 +159,7 @@ public class Deferred<T> {
      * useful if you only have one message to send.
      *
      * @param message the message to send
+     * @return the {@code Deferred} for chaining
      * @throws me.tatarka.ipromise.Promise.AlreadyClosedException thrown if the promise as already
      *                                                            been closed
      */
@@ -172,6 +174,7 @@ public class Deferred<T> {
      * it. This is useful if you only have no more messages to send.
      *
      * @param messages the messages to send
+     * @return the {@code Deferred} for chaining
      * @throws me.tatarka.ipromise.Promise.AlreadyClosedException thrown if the promise as already
      *                                                            been closed
      */
@@ -186,6 +189,7 @@ public class Deferred<T> {
      * it. This is useful if you only have no more messages to send.
      *
      * @param messages the messages to send
+     * @return the {@code Deferred} for chaining
      * @throws me.tatarka.ipromise.Promise.AlreadyClosedException thrown if the promise as already
      *                                                            been closed
      */

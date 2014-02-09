@@ -10,12 +10,12 @@ import me.tatarka.ipromise.Result;
  */
 public abstract class ResultAsyncAdapter<T, E extends Exception> extends AsyncAdapter<Result<T, E>> {
     @Override
-    public final void receive(Result<T, E> result) {
-        result(result);
-        if (result.isSuccess()) {
-            success(result.getSuccess());
+    public final void receive(Result<T, E> message) {
+        result(message);
+        if (message.isSuccess()) {
+            success(message.getSuccess());
         } else {
-            error(result.getError());
+            error(message.getError());
         }
     }
 

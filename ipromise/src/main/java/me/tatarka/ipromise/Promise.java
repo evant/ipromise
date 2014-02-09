@@ -1,6 +1,8 @@
 package me.tatarka.ipromise;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -12,12 +14,15 @@ import me.tatarka.ipromise.func.Filter;
 import me.tatarka.ipromise.func.Map;
 
 /**
- * A promise is a way to return a result the will be fulfilled sometime in the future. This fixes
- * the inversion of control that callback-style functions creates and restores the composeability of
- * return values. <p/> In addition to creating a standard interface for all asynchronous functions,
- * Promises can also more-robustly handle error and cancellation situations. <p/> You cannot
- * construct a {@code Promise} directly, instead you must get one from a {@link Deferred}. That is,
- * unless the result is already available.
+ * <p> A promise is a way to return a result the will be fulfilled sometime in the future. This
+ * fixes the inversion of control that callback-style functions creates and restores the
+ * composeability of return values. </p>
+ *
+ * <p> In addition to creating a standard interface for all asynchronous functions, Promises can
+ * also more-robustly handle error and cancellation situations. </p>
+ *
+ * <p> You cannot construct a {@code Promise} directly, instead you must get one from a {@link
+ * Deferred}. That is, unless the result is already available. </p>
  *
  * @author Evan Tatarka
  * @see Deferred
@@ -347,38 +352,41 @@ public class Promise<T> {
     }
 
     /**
-     * Constructs a new {@code Promise} that completes after both the current and given promises
-     * complete.
+     * Constructs a new {@code Promise} that receives a message after both of the given promises
+     * receive a message. This is a type-safe version of {@link Promise#and(Promise[])} for two
+     * promises.
      *
      * @param promise the other {@code Promise}
      * @param <T2>    the type of the other {@code Promise}
      * @return the new {@code Promise}
+     * @see Promise#and(Promise[])
      */
     public <T2> Promise<Pair<T, T2>> and(Promise<T2> promise) {
-        return and(this, promise).then(new Map<List, Pair<T, T2>>() {
+        return and(this, promise).then(new Map<Object[], Pair<T, T2>>() {
             @Override
-            public Pair<T, T2> map(List result) {
-                return Pair.of((T) result.get(0), (T2) result.get(1));
+            public Pair<T, T2> map(Object[] result) {
+                return Pair.of((T) result[0], (T2) result[1]);
             }
         });
     }
 
     /**
-     * Constructs a new {@code Promise} that waits before all given promises have a result before
-     * sending them to the new {@code Promise}, minus any promises that have already been closed.
-     * The new {@code Promise} is closed, when all of the given promises are closed.
+     * Constructs a new {@code Promise} that waits before all given promises receive a message
+     * before sending them to the new {@code Promise}, minus any promises that have already been
+     * closed. The resulting array will contain the messages at the same indices as the
+     * corresponding promises. If the promise has been closed, the corresponding message will be
+     * null. The new {@code Promise} is closed, when all of the given promises are closed.
      *
      * @param promises the promises
      * @return the new {@code Promise}
      */
-    public static Promise<List> and(final Promise... promises) {
+    public static Promise<Object[]> and(final Promise... promises) {
         if (promises == null) throw new NullPointerException();
 
-        final Promise<List> newPromise = new Promise<List>();
+        final Promise<Object[]> newPromise = new Promise<Object[]>();
         final AtomicInteger count = new AtomicInteger();
         final AtomicInteger size = new AtomicInteger(promises.length);
-        final List results = new ArrayList(promises.length);
-        for (Promise _ : promises) results.add(null);
+        final Object[] results = new Object[promises.length];
 
         final Object lock = new Object();
 
@@ -389,12 +397,13 @@ public class Promise<T> {
                 @Override
                 public void receive(Object message) {
                     synchronized (lock) {
-                        results.set(index, message);
+                        results[index] = message;
                         int done = count.incrementAndGet();
 
                         if (done >= size.get()) {
                             count.set(0);
-                            newPromise.send(results);
+                            newPromise.send(Arrays.copyOf(results, results.length));
+                            for (int i = 0; i < results.length; i++) results[i] = null;
                         }
                     }
                 }
@@ -413,13 +422,15 @@ public class Promise<T> {
 
     /**
      * Constructs a new {@code Promise} that receives a message when either of the given promises
-     * receive a message.
+     * receive a message. This is a type-safe version of {@link Promise#merge(Promise[])} for two
+     * promises.
      *
      * @param promise the other {@code Promise}.
      * @return the new {@code Promise}
+     * @see Promise#merge(Promise[])
      */
-    public Promise<T> merge(final Promise<T> promise) {
-        return merge(this, promise);
+    public Promise<T> merge(final Promise<? extends T> promise) {
+        return merge(this, promise).cast();
     }
 
     /**
@@ -427,24 +438,23 @@ public class Promise<T> {
      * receive a message.
      *
      * @param promises the promises
-     * @param <T>      the type of the promises
      * @return the new {@code Promise}
      */
-    public static <T> Promise<T> merge(final Promise<T>... promises) {
+    public static Promise<Object> merge(final Promise... promises) {
         if (promises == null) throw new NullPointerException();
 
-        final Promise<T> newPromise = new Promise<T>();
+        final Promise<Object> newPromise = new Promise<Object>();
         final AtomicInteger canceledCount = new AtomicInteger();
         final AtomicInteger size = new AtomicInteger(promises.length);
 
         newPromise.cancelToken.listen(new CancelToken.Listener() {
             @Override
             public void canceled() {
-                for (Promise<T> promise : promises) promise.cancel();
+                for (Promise promise : promises) promise.cancel();
             }
         });
 
-        for (Promise<T> promise : promises) {
+        for (Promise promise : promises) {
             // We can't just join cancel tokens here because the new promise should only cancel if
             // all of the given promises are canceled.
             promise.cancelToken.listen(new CancelToken.Listener() {
@@ -455,9 +465,9 @@ public class Promise<T> {
                 }
             });
 
-            promise.listen(new Listener<T>() {
+            promise.listen(new Listener() {
                 @Override
-                public void receive(T message) {
+                public void receive(Object message) {
                     newPromise.send(message);
                 }
             }).onClose(new CloseListener() {

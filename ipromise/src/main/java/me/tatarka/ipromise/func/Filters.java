@@ -17,7 +17,7 @@ public final class Filters {
     }
 
     /**
-     * Filters out any duplicates. For example, {@code [1, 2, 1, 3, 2]} will become {@link [1, 2,
+     * Filters out any duplicates. For example, {@code [1, 2, 1, 3, 2]} will become {@code [1, 2,
      * 3]}. This has to store all values it comes across to check duplicates, so use cautiously.
      *
      * @param <T> the item type
@@ -35,7 +35,7 @@ public final class Filters {
     }
 
     /**
-     * Filters out consecutive duplicates. For example, {@code [1, 1, 2, 2, 3]} will become {@link
+     * Filters out consecutive duplicates. For example, {@code [1, 1, 2, 2, 3]} will become {@code
      * [1, 2, 3]}.
      *
      * @param <T> the item type
@@ -56,7 +56,7 @@ public final class Filters {
 
     /**
      * Filters out items so that you will never get two consecutive ones within the given timespan.
-     * This is useful, if you wan't to sample a source at a lower rate.
+     * This is useful, if you want to sample a source at a lower rate.
      *
      * @param timespan the timespan
      * @param unit     the unit of the timespan
