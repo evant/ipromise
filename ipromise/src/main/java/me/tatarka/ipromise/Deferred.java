@@ -1,7 +1,8 @@
 package me.tatarka.ipromise;
 
+import java.util.concurrent.Executor;
+
 import me.tatarka.ipromise.buffer.PromiseBuffer;
-import me.tatarka.ipromise.buffer.PromiseBufferFactory;
 import me.tatarka.ipromise.buffer.PromiseBuffers;
 
 /**
@@ -19,34 +20,31 @@ public class Deferred<T> {
      * Constructs a new {@code Deferred}.
      */
     public Deferred() {
-        this(PromiseBuffers.<T>last(), new CancelToken());
+        this(PromiseBuffers.<T>last(), new CancelToken(), Promise.getDefaultCallbackExecutor());
     }
 
-    /**
-     * Constructs a new {@code Deferred} with the given {@link me.tatarka.ipromise.CancelToken}.
-     * When the cancel token is canceled, this deferred's {@link me.tatarka.ipromise.Promise} is
-     * also canceled.
-     *
-     * @param cancelToken the cancel token
-     */
     public Deferred(CancelToken cancelToken) {
-        this(PromiseBuffers.<T>last(), cancelToken);
+        this(PromiseBuffers.<T>last(), cancelToken, Promise.getDefaultCallbackExecutor());
     }
 
     public Deferred(PromiseBuffer<T> buffer) {
-        this(buffer, new CancelToken());
-    }
-
-    public Deferred(int bufferType) {
-        this(PromiseBuffers.<T>ofType(bufferType), new CancelToken());
-    }
-
-    public Deferred(int bufferType, CancelToken cancelToken) {
-        this(PromiseBuffers.<T>ofType(bufferType), cancelToken);
+        this(buffer, new CancelToken(), Promise.getDefaultCallbackExecutor());
     }
 
     public Deferred(PromiseBuffer<T> buffer, CancelToken cancelToken) {
-        promise = new ValuePromise<T>(buffer, cancelToken);
+        this(buffer, cancelToken, Promise.getDefaultCallbackExecutor());
+    }
+
+    public Deferred(int bufferType) {
+        this(PromiseBuffers.<T>ofType(bufferType), new CancelToken(), Promise.getDefaultCallbackExecutor());
+    }
+
+    public Deferred(int bufferType, CancelToken cancelToken) {
+        this(PromiseBuffers.<T>ofType(bufferType), cancelToken, Promise.getDefaultCallbackExecutor());
+    }
+
+    public Deferred(PromiseBuffer<T> buffer, CancelToken cancelToken, Executor callbackExecutor) {
+        promise = new ValuePromise<T>(buffer, cancelToken, callbackExecutor);
     }
 
     /**
@@ -72,14 +70,62 @@ public class Deferred<T> {
      * @param result the result to reject.
      * @throws me.tatarka.ipromise.Promise.AlreadyClosedException throws if a result has already been delivered.
      */
-    public synchronized void resolve(T result) {
+    public synchronized Deferred<T> resolve(T result) {
         if (promise == null) throw new Promise.AlreadyClosedException(result);
         promise.send(result);
         promise.close();
+        return this;
     }
 
     public synchronized void close() {
         promise.close();
         promise = null;
+    }
+
+    public static class Builder {
+        private Executor callbackExecutor;
+
+        public Builder() {
+        }
+
+        public Builder(Builder builder) {
+            callbackExecutor = builder.callbackExecutor;
+        }
+
+        public static Builder withCallbackExecutor(Executor callbackExecutor) {
+            return new Builder().callbackExecutor(callbackExecutor);
+        }
+
+        public Builder callbackExecutor(Executor callbackExecutor) {
+            Builder builder = new Builder(this);
+            builder.callbackExecutor = callbackExecutor;
+            return builder;
+        }
+
+        public <T> Deferred<T> build() {
+            return build(PromiseBuffers.<T>last());
+        }
+
+        public <T> Deferred<T> build(PromiseBuffer<T> buffer) {
+            return build(buffer, new CancelToken());
+        }
+
+        public <T> Deferred<T> build(CancelToken cancelToken) {
+            return build(PromiseBuffers.<T>last(), cancelToken);
+        }
+
+        public <T> Deferred<T> build(int bufferType) {
+            return build(PromiseBuffers.<T>ofType(bufferType));
+        }
+
+        public <T> Deferred<T> build(int bufferType, CancelToken cancelToken) {
+            return build(PromiseBuffers.<T>ofType(bufferType), cancelToken);
+        }
+
+        public <T> Deferred<T> build(PromiseBuffer<T> buffer, CancelToken cancelToken) {
+            if (callbackExecutor == null) callbackExecutor = Promise.getDefaultCallbackExecutor();
+            return new Deferred<T>(buffer, cancelToken, callbackExecutor);
+        }
+
     }
 }

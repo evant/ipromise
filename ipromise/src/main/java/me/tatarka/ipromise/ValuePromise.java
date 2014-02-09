@@ -1,6 +1,7 @@
 package me.tatarka.ipromise;
 
-import me.tatarka.ipromise.buffer.ArrayPromiseBuffer;
+import java.util.concurrent.Executor;
+
 import me.tatarka.ipromise.buffer.PromiseBuffer;
 
 public class ValuePromise<T> extends Promise<T> {
@@ -12,8 +13,8 @@ public class ValuePromise<T> extends Promise<T> {
      *
      * @param cancelToken the cancel token
      */
-    ValuePromise(PromiseBuffer<T> buffer, CancelToken cancelToken) {
-        super(cancelToken);
+    ValuePromise(PromiseBuffer<T> buffer, CancelToken cancelToken, Executor callbackExecutor) {
+        super(cancelToken, callbackExecutor);
         this.buffer = buffer;
         cancelToken.listen(new CancelToken.Listener() {
             @Override
@@ -21,19 +22,6 @@ public class ValuePromise<T> extends Promise<T> {
                 listeners.clear();
             }
         });
-    }
-
-    /**
-     * Constructs a promise with a result already in it. This is useful for when you can return the
-     * value immediately.
-     *
-     * @param result the result
-     */
-    public ValuePromise(T result) {
-        super(new CancelToken());
-        buffer = new ArrayPromiseBuffer<T>(1);
-        buffer.add(result);
-        close();
     }
 
     @Override
@@ -44,7 +32,7 @@ public class ValuePromise<T> extends Promise<T> {
     @Override
     protected void onListen(Listener<T> listener) {
         for (T message : buffer) {
-            dispatch(message);
+            dispatch(listener, message);
         }
     }
 }

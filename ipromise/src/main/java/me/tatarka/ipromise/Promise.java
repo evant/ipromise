@@ -1,14 +1,12 @@
 package me.tatarka.ipromise;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.tatarka.ipromise.buffer.ArrayPromiseBuffer;
-import me.tatarka.ipromise.buffer.PromiseBuffer;
-import me.tatarka.ipromise.buffer.PromiseBufferFactory;
-import me.tatarka.ipromise.buffer.PromiseBuffers;
 import me.tatarka.ipromise.func.Chain;
 import me.tatarka.ipromise.func.Filter;
 import me.tatarka.ipromise.func.Map;
@@ -32,22 +30,46 @@ public class Promise<T> {
     public static final int BUFFER_LAST = 1;
     public static final int BUFFER_ALL = 2;
 
+    private static Executor defaultCallbackExecutor;
+    private static Executor sameThreadCallbackExecutor;
+
     private CancelToken cancelToken;
+    private Executor callbackExecutor;
     private boolean isClosed;
 
     protected final List<Listener<T>> listeners = new ArrayList<Listener<T>>();
     protected final List<CloseListener> closeListeners = new ArrayList<CloseListener>();
 
-    protected Promise() {
-        this(new CancelToken());
+    public static Executor getDefaultCallbackExecutor() {
+        if (defaultCallbackExecutor == null) defaultCallbackExecutor = Executors.newSingleThreadExecutor();
+        return defaultCallbackExecutor;
     }
 
-    protected Promise(CancelToken cancelToken) {
+    public static void setDefaultCallbackExecutor(Executor callbackExecutor) {
+        defaultCallbackExecutor = callbackExecutor;
+    }
+
+    public static Executor getSameThreadCallbackExecutor() {
+        if (sameThreadCallbackExecutor == null) sameThreadCallbackExecutor = new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                command.run();
+            }
+        };
+        return sameThreadCallbackExecutor;
+    }
+
+    protected Promise() {
+        this(new CancelToken(), getDefaultCallbackExecutor());
+    }
+
+    protected Promise(CancelToken cancelToken, Executor callbackExecutor) {
         this.cancelToken = cancelToken;
+        this.callbackExecutor = callbackExecutor;
     }
 
     protected Promise(final Promise parentPromise) {
-        this(parentPromise.cancelToken);
+        this(parentPromise.cancelToken, parentPromise.callbackExecutor);
         parentPromise.onClose(new CloseListener() {
             @Override
             public void close() {
@@ -76,13 +98,28 @@ public class Promise<T> {
         if (isClosed) throw new AlreadyClosedException(message);
 
         onSend(message);
-        dispatch(message);
+
+        for (Listener<T> listener : listeners) {
+            dispatch(listener, message);
+        }
     }
 
-    void dispatch(T message) {
-        for (Listener<T> listener : listeners) {
-            listener.receive(message);
-        }
+    void dispatch(final Listener<T> listener, final T message) {
+        callbackExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                listener.receive(message);
+            }
+        });
+    }
+
+    void dispatchClose(final CloseListener listener) {
+        callbackExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                listener.close();
+            }
+        });
     }
 
     protected void onSend(T message) {}
@@ -96,7 +133,7 @@ public class Promise<T> {
         listeners.clear();
 
         for (CloseListener listener : closeListeners) {
-            listener.close();
+            dispatchClose(listener);
         }
         closeListeners.clear();
     }
@@ -146,9 +183,9 @@ public class Promise<T> {
     public synchronized Promise<T> listen(final Listener<T> listener) {
         if (listener == null) return this;
 
-        listeners.add(listener);
         onListen(listener);
-        if (isClosed) listeners.clear();
+
+        if (!isClosed()) listeners.add(listener);
 
         return this;
     }
@@ -167,7 +204,7 @@ public class Promise<T> {
         if (listener == null) return this;
 
         if (isClosed) {
-            listener.close();
+            dispatchClose(listener);
         } else {
             closeListeners.add(listener);
         }
@@ -248,7 +285,7 @@ public class Promise<T> {
      * @return the new {@code Promise}
      */
     public synchronized Promise<List<T>> batch(final int size) {
-        final Promise<List<T>> newPromise = new Promise<List<T>>(cancelToken);
+        final Promise<List<T>> newPromise = new Promise<List<T>>(cancelToken, callbackExecutor);
         final List<T> batchedItems = new ArrayList<T>();
         listen(new Listener<T>() {
             @Override
@@ -413,6 +450,52 @@ public class Promise<T> {
         return (Promise<T2>) this;
     }
 
+    private class NextListener implements Listener<T>, CloseListener, CancelToken.Listener {
+        T message;
+        boolean success;
+        boolean failure;
+
+        @Override
+        public synchronized void receive(T result) {
+            message = result;
+            success = true;
+            notifyAll();
+        }
+
+        public synchronized T getNext() throws CancelException, CloseException, InterruptedException {
+            if (success) {
+                success = false;
+                return message;
+            } else if (isCanceled()) {
+                throw new CancelException();
+            } else if (isClosed()) {
+                throw new CloseException();
+            }
+
+            wait();
+
+            if (success) {
+                success = false;
+                return message;
+            } else {
+                if (isCanceled()) throw new CancelException();
+                else throw new CloseException();
+            }
+        }
+
+        @Override
+        public synchronized void close() {
+            failure = true;
+            notifyAll();
+        }
+
+        @Override
+        public synchronized void canceled() {
+            failure = true;
+            notifyAll();
+        }
+    }
+
     /**
      * The Exception thrown if a result has already been delivered and a second result is attempted
      * to be delivered.
@@ -420,6 +503,29 @@ public class Promise<T> {
     public static class AlreadyClosedException extends IllegalStateException {
         public AlreadyClosedException(Object message) {
             super(message + " cannot be sent because the promise has already been closed.");
+        }
+    }
+
+    public static class NotAvailableException extends Exception {
+        public NotAvailableException(String mesage) {
+        }
+    }
+
+    public static class CancelException extends NotAvailableException {
+        public CancelException() {
+            super("The promise has been canceled, no value is available");
+        }
+    }
+
+    public static class CloseException extends NotAvailableException {
+        public CloseException() {
+            super("The promise has been closed, no value is available");
+        }
+    }
+
+    public static class NotReadyException extends NotAvailableException {
+        public NotReadyException() {
+            super("The promise does not yet have a value");
         }
     }
 }

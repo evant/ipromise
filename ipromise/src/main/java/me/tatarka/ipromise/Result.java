@@ -350,9 +350,19 @@ public final class Result<T, E extends Exception> {
      * @see Result.Chain
      */
     public static abstract class ChainPromise<T1, T2, E extends Exception> extends Chain<T1, E, Promise<Result<T2, E>>> {
+        private Deferred.Builder deferredBuilder;
+
+        public ChainPromise() {
+            this(new Deferred.Builder());
+        }
+
+        public ChainPromise(Deferred.Builder deferredBuilder) {
+            this.deferredBuilder = deferredBuilder;
+        }
+
         @Override
         protected Promise<Result<T2, E>> error(E error) {
-            return new ValuePromise<Result<T2, E>>(Result.<T2, E>error(error));
+            return deferredBuilder.<Result<T2, E>>build().resolve(Result.<T2, E>error(error)).promise();
         }
     }
 }

@@ -5,28 +5,35 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 
-import me.tatarka.ipromise.func.Chain;
 import me.tatarka.ipromise.Deferred;
-import me.tatarka.ipromise.func.Filters;
 import me.tatarka.ipromise.Listener;
-import me.tatarka.ipromise.func.Map;
 import me.tatarka.ipromise.Pair;
 import me.tatarka.ipromise.Promise;
+import me.tatarka.ipromise.func.Chain;
+import me.tatarka.ipromise.func.Filters;
+import me.tatarka.ipromise.func.Map;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Created by evan on 10/26/13
  */
 @RunWith(JUnit4.class)
 public class TestPromise {
+    static {
+        Promise.setDefaultCallbackExecutor(Promise.getSameThreadCallbackExecutor());
+    }
+
     @Test
-    public void testPromiseBefore() {
-        Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_LAST);
+    public void testPromiseBefore() throws Exception {
+        Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
         Listener listener = mock(Listener.class);
@@ -37,7 +44,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseAfterBufferNone() {
+    public void testPromiseAfterBufferNone() throws Exception {
         Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_NONE);
         Promise<String> promise = deferred.promise();
         String result = "success";
@@ -49,8 +56,8 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseAfterBufferLast() {
-        Deferred<String> deferred = new Deferred<String>();
+    public void testPromiseAfterBufferLast() throws Exception {
+        Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_LAST);
         Promise<String> promise = deferred.promise();
         String result = "success";
         Listener listener = mock(Listener.class);
@@ -61,7 +68,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseAfterBufferAll() {
+    public void testPromiseAfterBufferAll() throws Exception {
         Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_ALL);
         Promise<String> promise = deferred.promise();
         String result1 = "success1";
@@ -75,7 +82,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseCancelBefore() {
+    public void testPromiseCancelBefore() throws Exception {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
@@ -89,7 +96,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseCancelAfter() {
+    public void testPromiseCancelAfter() throws Exception {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
@@ -103,7 +110,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseMap() {
+    public void testPromiseMap() throws Exception {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         String result = "success";
@@ -120,16 +127,16 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseChain() {
+    public void testPromiseChain() throws Exception {
         Deferred<String> deferred1 = new Deferred<String>();
         Promise<String> promise1 = deferred1.promise();
+        final Deferred<Integer> deferred2 = new Deferred<Integer>();
+        final Promise<Integer> promise2 = deferred2.promise();
         String result = "success";
         Listener listener = mock(Listener.class);
         promise1.then(new Chain<String, Promise<Integer>>() {
             @Override
             public Promise<Integer> chain(String result) {
-                Deferred<Integer> deferred2 = new Deferred<Integer>();
-                Promise<Integer> promise2 = deferred2.promise();
                 deferred2.resolve(result.length());
                 return promise2;
             }
@@ -140,7 +147,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseCancelAbove() {
+    public void testPromiseCancelAbove() throws Exception {
         Deferred<String> deferred1 = new Deferred<String>();
         Promise<String> promise1 = deferred1.promise();
         final Deferred<Integer> deferred2 = new Deferred<Integer>();
@@ -162,7 +169,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseCancelBelow() {
+    public void testPromiseCancelBelow() throws Exception {
         Deferred<String> deferred1 = new Deferred<String>();
         Promise<String> promise1 = deferred1.promise();
         final Deferred<Integer> deferred2 = new Deferred<Integer>();
@@ -184,7 +191,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseAnd() {
+    public void testPromiseAnd() throws Exception {
         Deferred<String> deferred1 = new Deferred<String>();
         Promise<String> promise1 = deferred1.promise();
         final Deferred<Integer> deferred2 = new Deferred<Integer>();
@@ -200,7 +207,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testPromiseMerge() {
+    public void testPromiseMerge() throws Exception {
         Deferred<String> deferred1 = new Deferred<String>();
         Promise<String> promise1 = deferred1.promise();
         final Deferred<String> deferred2 = new Deferred<String>();
@@ -217,7 +224,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testFilter() {
+    public void testFilter() throws Exception {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         Listener listener = mock(Listener.class);
@@ -229,7 +236,7 @@ public class TestPromise {
     }
 
     @Test
-    public void testBatch() {
+    public void testBatch() throws Exception {
         Deferred<String> deferred = new Deferred<String>();
         Promise<String> promise = deferred.promise();
         Listener listener = mock(Listener.class);

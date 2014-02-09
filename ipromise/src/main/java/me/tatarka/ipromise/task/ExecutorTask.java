@@ -15,6 +15,7 @@ import me.tatarka.ipromise.task.Task;
  * @see me.tatarka.ipromise.task.Task
  */
 public class ExecutorTask<T> implements Task<T> {
+    protected Deferred.Builder deferredBuilder;
     protected Executor executor;
     protected Do<T> callback;
 
@@ -24,7 +25,11 @@ public class ExecutorTask<T> implements Task<T> {
      * @param callback the callback
      */
     public ExecutorTask(Do<T> callback) {
-        this(Executors.newSingleThreadExecutor(), callback);
+        this(new Deferred.Builder(), Executors.newSingleThreadExecutor(), callback);
+    }
+
+    public ExecutorTask(Executor executor, Do<T> callback) {
+        this(new Deferred.Builder(), executor, callback);
     }
 
     /**
@@ -34,7 +39,8 @@ public class ExecutorTask<T> implements Task<T> {
      * @param executor the executor
      * @param callback the callback
      */
-    public ExecutorTask(Executor executor, Do<T> callback) {
+    public ExecutorTask(Deferred.Builder deferredBuilder, Executor executor, Do<T> callback) {
+        this.deferredBuilder = deferredBuilder;
         this.executor = executor;
         this.callback = callback;
     }
@@ -42,7 +48,7 @@ public class ExecutorTask<T> implements Task<T> {
     @Override
     public Promise<T> start() {
         final CancelToken cancelToken = new CancelToken();
-        final Deferred<T> deferred = new Deferred<T>(cancelToken);
+        final Deferred<T> deferred = deferredBuilder.build(cancelToken);
 
         executor.execute(new Runnable() {
             @Override
