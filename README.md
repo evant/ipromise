@@ -8,10 +8,12 @@ style of synchronous code. You can view the javadoc at
 http://evant.github.com/ipromise
 
 - [Install](#install)
+- [Features](#features)
 - [Usage](#usage)
 - [Implementing Promises](#implementing-promises)
 - [Progress](#progress)
 - [Cancellation](#cancellation)
+- [Callback Execution](#callback-execution)
 - [Android](#android)
 - [A Note on Memory Usage](#a-note-on-memory-usage)
 
@@ -57,6 +59,25 @@ Or for Android
   <version>1.0-SNAPSHOT</version>
 </dependency>
 ```
+
+Features
+--------
+This library has a few unique features to give you control over your
+asynchronous code.
+
+1. You can send multiple messages to show progress, etc.
+2. Error control is out not backed in to the promises. Instead you can
+represent errors using a `Result<T,E>`. This way you are free to use promises
+in contexts where you know an Exception will never be thrown.
+3. You can control how messages are buffered for redelivery when a listener is
+attached. The default is just to save the last one, but you can save all of
+them, none of them, or implement your own scheme. (see `PromiseBuffer`).
+4. You can control in what context callbacks are executed. By default they are
+executed on a single background thread; but you can, for example, run them on
+your UI thread so you don't have to worry about posting them back.
+5. Special consideration has been given to Android to handle the Activity
+lifecycle so you don't run into the same pitfalls as you do with `AsyncTask`
+
 
 Usage
 -----
@@ -215,14 +236,14 @@ public Promise<Result<MyResult, Error>> asyncWithPromise(Arg arg) {
 }
 ```
 
-You can also use a `Task` to easily run code in a seperate thread and return a
+You can also use a `Task` to easily run code in a separate thread and return a
 `Proimse`.
 ```java
 // Runs in a seperate thread 
 public Proimse<MyResult> async() {
-  return Tasks.run(new Do<MyResult>() {
+  return Tasks.run(new Task.DoOnce<MyResult>() {
     @Override
-    public MyResult run(CancelToken cancelToken) {
+    public MyResult runOnce(CancelToken cancelToken) {
       return sync();
     }
   });
@@ -230,7 +251,7 @@ public Proimse<MyResult> async() {
 
 // Handles exceptions 
 public Promise<Result<MyResult, Error>> asyncError() {
-  return Tasks.run(new DoFailable<MyResult, Error>() {
+  return Tasks.run(new Task.DoOnceFailable<MyResult, Error>() {
     @Override
     public MyResult runFailable(CancelToken cancelToken) throws Error {
       return syncThatThrows();
@@ -243,61 +264,68 @@ You can also pass an `Executor` to a `Task` for more control.
 
 Progress
 --------
-If you have to return multiple results over time, you can use a `Progress`
-instead of a `Promise`.
+If you have to return multiple results over time, just use `send()` instead of
+`resolve()`. You do, however need to make sure to call `close()` when you are
+finished sending. 
 
 ```java
-Progress<Integer> progress = asyncProgress();
-progress.listen(new Progress.Listener<Integer>() {
+public Promise<MyProgress> asyncWithPromise(Arg arg) {
+  final Deferred<MyProgress> deferred = new Deferred<MyProgress>();
+  asyncWithProgressCallback(arg, new Callback() {
     @Override
-    public void receive(Integer message) {
-        // This is called on each progress update.
-    }
-});
-```
-
-Like using `Deferred` with `Promise`, you use `Channel` with `Progress`. Unlike
-`Promise` however, you need to make sure you close your `Channel` when you are
-done sending messages.
-```java
-public Progress<Result<MyProgress, Error>> asyncWithPromise(Arg arg) {
-    final Channel<Result<MyProgress, Error>> channel = new Channel<Result<MyProgress, Error>>();
-	asyncWithProgressCallback(arg, new Callback() {
-		@Override
-		public void onProgress(MyProgress progress) {
-			channel.send(Result.<MyProgress, Error>success(progress));
+    public void onProgress(MyProgress progress) {
+		  deferred.send(progress);
 		}
 		@Override
 		public void onFinish() {
-		    channel.close();
-		}
-		@Override
-		public void onError(Error error) {
-			channel.send(Result.<MyProgress, Error>error(error));
+		  deferred.close();
 		}
 	});
 	return channel.progress();
 }
 ```
 
-There are various different ways to handle old messages on a `Progress` for
-this reason, the `Channel` constructor can take a retention policy. There are
-3 options.
+On the receiving end, you can attach a `CloseListener` to respond to when the
+promise has been closed. 
 
-- `Progress.RETAIN_NONE` - This means that if there is no listener when a
-  a message is sent, the message is dropped.
-- `Progress.REATIN_LAST` - This means the last message is saved. This message
-  will immediatly be delivered to the listener when it is attached.
-- `Progress.REATIN_ALL` - This means all messages are saved and will be deliverd
-  to the listener when it is attached.
+```java
+promise.listen(new Listener<MyProgress>() {
+  @Override
+  public void receive(MyProgress progress) {
+    // This is called with every progress update.
+  }
+}).onClose(new CloseListener() {
+  @Override
+  public void close() {
+    // This is called when there will be no more updates.
+  }
+});
+```
 
-When choosing a retention policy keep in mind that all messages saved will be
-kept in memory until the `Progress` is garbage collected.
+There are various different ways to handle old messages when multiple ones are
+sent. For this reason, you can pass a `PromiseBuffer` to a `Deferred` which will
+determine how messages are buffered and redelivered when a listener is attached.
+
+For the common cases you can pass in an enumeration.
+
+- `Proimse.BUFFER_NONE` - This means that if there is no listener when a message
+  is sent, the message is dropped.
+- `Promise.BUFFER_LAST` - This means the last message is saved. This is the
+- default since it acts like most promise implementations when one message is
+  sent.
+- `Progress.REATIN_ALL` - This means all messages are saved.
+
+You can also pass in your own instance of `PromiseBuffer` if you need more
+control.
+
+When choosing a buffer strategy keep in mind that all messages saved will be
+kept in memory until the `Promise` is garbage collected.
 
 Cancellation
 ------------
-If you have or want to create async methods that support cancellation, you need
-to use a `CancelToken`. This ensures the cancel propagates to all Promises.
+If you have or want to create asynchronous methods that support cancellation,
+you need to use a `CancelToken`. This ensures the cancel propagates to all
+Promises.
 ```java
 public Promise<Integer> mySuperSlowMethod() {
 	final CancelToken cancelToken = new CancelToken();
@@ -333,16 +361,43 @@ public Promise<MyResult> yourSuperSlowMethod() {
 	return deferred.promise();
 }
 ```
-A `Progress` can be canceled the same way.
+
+Callback Execution
+------------------
+As mentioned in the feature section, callbacks are not executed in the calling
+context, but instead by using an `Executor`. This makes them much easier to
+reason about since their execution context is always the same. By default all
+callbacks are executed on a single background thread, but you can configure this
+is a few different ways.
+
+The easiest way is to call `Promise.setDefaultCallbackExecutor(executor)` which
+sets it globally for all promises. This should only be called once for you
+application, though this is not enforced. If you need more granular control you
+can create a builder with `Deferred.Builder.withCallbackExecutor(executor)` and
+then call `build()` to get a deferred with your `Executor`. Finally, `Deferred`
+has a constructor that takes an `Executor` as an argument.
+
+When using a custom `Executor`, you must ensure that all jobs are run in the
+same order they are posted for a given `Promise`. If you don't you risk the
+callbacks being fired in an unexpected order.
+
+For Android, it's a good idea to use the provided
+`AndroidPromiseExecutors.mainLooperCallbackExecutor()` which will run all
+callbacks on the UI thread.
+
+For unit testing, you can use `Promise.getSameThreadExecutor()` to run callbacks
+on the same thread as the messages that are sent. This way you can send a
+message and ensure the callback is called without using any thread
+synchronization.
 
 Android
 -------
 Managing the Activity lifecycle in Android with asynchronous calls can be very
 tricky. Loaders improve this, but fall short in many situations and have a
-cluncky api. Instead, you can use the `AsyncManager`. It will handle Activity
+clunky api. Instead, you can use the `AsyncManager`. It will handle Activity
 destruction, configuration changes, and posting results to the UI thread.
 
-If you just want to load data in the backround and show it on screen when you
+If you just want to load data in the background and show it on screen when you
 are done, it is incredibly easy.
 ```java
 public class MyActivity extends Activity {
@@ -372,7 +427,7 @@ public class MyActivity extends Activity {
 
   // It is important that this does not have a reference to surrounding Activity
   // to prevent memory leaks
-  private static Task.Do<String> mySlowTask = new Task.Do<String>() {
+  private static Task.DoOnce<String> mySlowTask = new Task.DoOnce<String>() {
     @Override
     public String run(CancelToken cancelToken) {
       return doSomeSlowWork();
@@ -430,22 +485,17 @@ You can see more examples on how to use `AsyncManager` in
 
 A Note on Memory Usage
 ----------------------
-Both `Promise` and `Progress` keep internal state about their results so that
-you can attach a listener at any time. This however can make it easy to leak
-memory.
+This library does it's best effort to reduce memory usage by removing listeners 
+when they are no longer needed and only keeping one copy of the messages in the
+buffer even when you `Map` or `Filter`. However, you need to keep in mind a few
+things to make sure you don't leak any memory.
 
-A `Promise` will store it's result forever. If this result is potentially very
-large, make sure that you don't keep a reference to the `Proimse` arround after
-the result is recieved. This could be made tricky by the fact that `Deferred`
-keeps a reference its `Promise`. For that reason, async code should never hold a
-refernce to `Defererd` longer than required.
+By default, a `Promise` will store it's last result for as long is it lives.
+You can configure this by passing a different `PromiseBuffer` to the `Deferred`.
+This means that you should not keep a reference `Promise` or `Deferred` longer
+than necessary.
 
-A `Progress` will store messages depending on it's set retention policy. Keep in
-mind which one you choose to control your memory usage.
-
-Also remember that anonymous inner classes (which you are probably using for
-callbacks) will keep a reference to their outer class even if you don't
-reference anything from it. This means that the outer class will not be garbage
-collected until the `Promise` completes or the `Channel` for a `Progress` is
-closed. The easiest way arround this is to call `cancel()` on the `Promise` or
-`Progress` when it's no longer needed.
+You should also remember that anonymous inner classes (which you are probably
+using for callbacks) will keep a reference to their outer class even if you
+don't reference anything from it. This means that the outer class will not be
+garbage collected until the `Promise` is closed or canceled.
