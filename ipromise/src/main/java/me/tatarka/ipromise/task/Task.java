@@ -85,6 +85,32 @@ public interface Task<T> {
         }
 
         public abstract void runMay(Sender<T> sender, CancelToken cancelToken);
+
+        private static class DeferredSender<T> implements Sender<T> {
+            private Deferred<T> deferred;
+
+            DeferredSender(Deferred<T> deferred) {
+                this.deferred = deferred;
+            }
+
+            @Override
+            public Sender<T> send(T message) {
+                deferred.send(message);
+                return this;
+            }
+
+            @Override
+            public Sender<T> sendAll(Iterable<T> messages) {
+                deferred.sendAll(messages);
+                return this;
+            }
+
+            @Override
+            public Sender<T> sendAll(T[] messages) {
+                deferred.sendAll(messages);
+                return this;
+            }
+        }
     }
 
     /**
@@ -112,6 +138,32 @@ public interface Task<T> {
         }
 
         public abstract void runMayFailable(Sender<T> sender, CancelToken cancelToken) throws E;
+
+        private static class FailableDeferredSender<T, E extends Exception> implements Sender<T> {
+            private Deferred<Result<T, E>> deferred;
+
+            FailableDeferredSender(Deferred<Result<T, E>> deferred) {
+                this.deferred = deferred;
+            }
+
+            @Override
+            public Sender<T> send(T message) {
+                deferred.send(Result.<T, E>success(message));
+                return this;
+            }
+
+            @Override
+            public Sender<T> sendAll(Iterable<T> messages) {
+                for (T message : messages) deferred.send(Result.<T, E>success(message));
+                return this;
+            }
+
+            @Override
+            public Sender<T> sendAll(T[] messages) {
+                for (T message : messages) deferred.send(Result.<T, E>success(message));
+                return this;
+            }
+        }
     }
 
     /**
@@ -126,57 +178,5 @@ public interface Task<T> {
         Sender<T> sendAll(Iterable<T> messages);
 
         Sender<T> sendAll(T[] messages);
-    }
-
-    static class DeferredSender<T> implements Sender<T> {
-        private Deferred<T> deferred;
-
-        DeferredSender(Deferred<T> deferred) {
-            this.deferred = deferred;
-        }
-
-        @Override
-        public Sender<T> send(T message) {
-            deferred.send(message);
-            return this;
-        }
-
-        @Override
-        public Sender<T> sendAll(Iterable<T> messages) {
-            deferred.sendAll(messages);
-            return this;
-        }
-
-        @Override
-        public Sender<T> sendAll(T[] messages) {
-            deferred.sendAll(messages);
-            return this;
-        }
-    }
-
-    static class FailableDeferredSender<T, E extends Exception> implements Sender<T> {
-        private Deferred<Result<T, E>> deferred;
-
-        FailableDeferredSender(Deferred<Result<T, E>> deferred) {
-            this.deferred = deferred;
-        }
-
-        @Override
-        public Sender<T> send(T message) {
-            deferred.send(Result.<T, E>success(message));
-            return this;
-        }
-
-        @Override
-        public Sender<T> sendAll(Iterable<T> messages) {
-            for (T message : messages) deferred.send(Result.<T, E>success(message));
-            return this;
-        }
-
-        @Override
-        public Sender<T> sendAll(T[] messages) {
-            for (T message : messages) deferred.send(Result.<T, E>success(message));
-            return this;
-        }
     }
 }
