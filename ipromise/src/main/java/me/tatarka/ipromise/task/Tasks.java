@@ -60,9 +60,10 @@ public class Tasks {
      * messages to the returned {@link me.tatarka.ipromise.Promise}. This is equivalent to: {@code
      * Task.of(deferredBuilder, executor, callback).start()}.
      *
-     * @param executor the executor used to run the callback
-     * @param callback the callback
-     * @param <T>      the result type
+     * @param deferredBuilder the deferred builder
+     * @param executor        the executor used to run the callback
+     * @param callback        the callback
+     * @param <T>             the result type
      * @return the promise that will receive the messages
      */
     public static <T> Promise<T> run(Deferred.Builder deferredBuilder, Executor executor, Task.Do<T> callback) {
@@ -88,8 +89,9 @@ public class Tasks {
      * {@link Task#start()} is called. If the {@link me.tatarka.ipromise.Promise} is canceled, the
      * thread is interrupted.
      *
-     * @param callback the callback to run in a separate thread
-     * @param <T>      the result type
+     * @param deferredBuilder the deferred builder
+     * @param callback        the callback to run in a separate thread
+     * @param <T>             the result type
      * @return the task
      * @see ExecutorTask
      */
@@ -115,9 +117,10 @@ public class Tasks {
      * Constructs a new {@link ExecutorTask} that calls the given callback using the given {@link
      * java.util.concurrent.Executor} when {@link Task#start()} is called.
      *
-     * @param executor the executor used to run the callback
-     * @param callback the callback
-     * @param <T>      the result type
+     * @param deferredBuilder the deferred builder
+     * @param executor        the executor used to run the callback
+     * @param callback        the callback
+     * @param <T>             the result type
      * @return the task
      * @see ExecutorTask
      */
