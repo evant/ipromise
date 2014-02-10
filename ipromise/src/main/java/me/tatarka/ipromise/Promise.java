@@ -1,17 +1,14 @@
 package me.tatarka.ipromise;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import me.tatarka.ipromise.func.Chain;
 import me.tatarka.ipromise.func.Filter;
 import me.tatarka.ipromise.func.Map;
+
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p> A promise is a way to return a result the will be fulfilled sometime in the future. This
@@ -27,7 +24,7 @@ import me.tatarka.ipromise.func.Map;
  * @author Evan Tatarka
  * @see Deferred
  */
-public class Promise<T> {
+public class Promise<T> implements Iterable<T> {
     public static final int BUFFER_NONE = 0;
     public static final int BUFFER_LAST = 1;
     public static final int BUFFER_ALL = 2;
@@ -437,6 +434,76 @@ public class Promise<T> {
     @SuppressWarnings("unchecked")
     public <T2> Promise<T2> cast() {
         return (Promise<T2>) this;
+    }
+
+    /**
+     * Returns an iterator that will block until each message is received. Like {@link
+     * me.tatarka.ipromise.Promise#listen(Listener)}, the {@link me.tatarka.ipromise.buffer.PromiseBuffer}
+     * determines how messages that are sent before the iterator is created are handled.
+     *
+     * @return the iterator
+     */
+    @Override
+    public Iterator<T> iterator() {
+        return new PromiseIterator();
+    }
+
+    private class PromiseIterator implements Iterator<T> {
+        private BlockingQueue<Result<T, Exception>> buffer = new LinkedBlockingQueue<Result<T, Exception>>();
+        private Result<T, Exception> nextMessage;
+        private boolean nextComplete;
+
+        PromiseIterator() {
+            listen(new Listener<T>() {
+                @Override
+                public void receive(T message) {
+                    try {
+                        buffer.put(Result.success(message));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            });
+            onClose(new CloseListener() {
+                @Override
+                public void close() {
+                    try {
+                        buffer.put(Result.<T, Exception>error(new AlreadyClosedException(null)));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            });
+        }
+
+        @Override
+        public boolean hasNext() {
+            Result<T, Exception> next = getNext();
+            return next.isSuccess();
+        }
+
+        @Override
+        public T next() {
+            Result<T, Exception> next = getNext();
+            nextComplete = false;
+            if (next.isSuccess()) {
+                return next.getSuccess();
+            } else {
+                throw new NoSuchElementException();
+            }
+        }
+
+        private Result<T, Exception> getNext() {
+            if (!nextComplete) {
+                try {
+                    nextMessage = buffer.take();
+                    nextComplete = true;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            return nextMessage;
+        }
     }
 
     /**

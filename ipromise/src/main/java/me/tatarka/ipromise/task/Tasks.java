@@ -1,9 +1,10 @@
 package me.tatarka.ipromise.task;
 
+import me.tatarka.ipromise.Deferred;
+import me.tatarka.ipromise.Promise;
+
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
-import me.tatarka.ipromise.Promise;
 
 /**
  * A collection of helper methods for constructing tasks.
@@ -40,9 +41,13 @@ public final class Tasks {
         return Tasks.of(executor, callback).start();
     }
 
+    public static <T> Promise<T> run(Deferred.Builder deferredBuilder, Executor executor, Task.Do<T> callback) {
+        return Tasks.of(deferredBuilder, executor, callback).start();
+    }
+
     /**
-     * Constructs a new {@link ExecutorTask} that calls the given callback in a separate
-     * thread when {@link Task#start()} is called.
+     * Constructs a new {@link ExecutorTask} that calls the given callback in a separate thread when
+     * {@link Task#start()} is called.
      *
      * @param callback the callback to run in a separate thread
      * @param <T>      the result type
@@ -54,8 +59,8 @@ public final class Tasks {
     }
 
     /**
-     * Constructs a new {@link ExecutorTask} that calls the given callback using the given
-     * {@link java.util.concurrent.Executor} when {@link Task#start()} is called.
+     * Constructs a new {@link ExecutorTask} that calls the given callback using the given {@link
+     * java.util.concurrent.Executor} when {@link Task#start()} is called.
      *
      * @param executor the executor used to run the callback
      * @param callback the callback
@@ -65,5 +70,9 @@ public final class Tasks {
      */
     public static <T> ExecutorTask<T> of(Executor executor, Task.Do<T> callback) {
         return new ExecutorTask<T>(executor, callback);
+    }
+
+    public static <T> ExecutorTask<T> of(Deferred.Builder deferredBuilder, Executor executor, Task.Do<T> callback) {
+        return new ExecutorTask<T>(deferredBuilder, executor, callback);
     }
 }

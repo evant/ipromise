@@ -1,28 +1,23 @@
 package me.tatarka.ipromise.unit;
 
+import me.tatarka.ipromise.*;
+import me.tatarka.ipromise.func.Chain;
+import me.tatarka.ipromise.func.Filters;
+import me.tatarka.ipromise.func.Map;
+import me.tatarka.ipromise.task.Task;
+import me.tatarka.ipromise.task.Tasks;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-
-import me.tatarka.ipromise.CallbackExecutors;
-import me.tatarka.ipromise.Deferred;
-import me.tatarka.ipromise.Listener;
-import me.tatarka.ipromise.Pair;
-import me.tatarka.ipromise.Promise;
-import me.tatarka.ipromise.func.Chain;
-import me.tatarka.ipromise.func.Filters;
-import me.tatarka.ipromise.func.Map;
+import java.util.List;
+import java.util.concurrent.Executors;
 
 import static me.tatarka.ipromise.CallbackExecutors.sameThreadExecutor;
 import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Created by evan on 10/26/13
@@ -249,5 +244,35 @@ public class TestPromise {
         verify(listener).receive(Arrays.asList("three", "four"));
         verify(listener).receive(Arrays.asList("three", "four"));
         verify(listener).receive(Arrays.asList("five"));
+    }
+
+    @Test
+    public void testIterator() throws Exception {
+        Deferred<String> deferred = new Deferred<String>(Promise.BUFFER_ALL);
+        Promise<String> promise = deferred.promise();
+        deferred.resolveAll("one", "two", "three", "four", "five");
+        List<String> results = new ArrayList<String>();
+        for (String result : promise) {
+            results.add(result);
+        }
+
+        assertThat(results).containsExactly("one", "two", "three", "four", "five");
+    }
+
+    @Test
+    public void testIteratorThreaded() throws Exception {
+        Deferred.Builder backgroundThreadDeferred = Deferred.Builder.withCallbackExecutor(CallbackExecutors.backgroundThreadExecutor());
+        Promise<String> promise = Tasks.run(backgroundThreadDeferred, Executors.newSingleThreadExecutor(), new Task.DoMany<String>() {
+            @Override
+            public void runMay(Task.Sender<String> sender, CancelToken cancelToken) {
+                sender.sendAll("one", "two", "three", "four", "five");
+            }
+        });
+        List<String> results = new ArrayList<String>();
+        for (String result : promise) {
+            results.add(result);
+        }
+
+        assertThat(results).containsExactly("one", "two", "three", "four", "five");
     }
 }

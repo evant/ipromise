@@ -106,7 +106,7 @@ public interface Task<T> {
             }
 
             @Override
-            public Sender<T> sendAll(T[] messages) {
+            public Sender<T> sendAll(T... messages) {
                 deferred.sendAll(messages);
                 return this;
             }
@@ -159,7 +159,7 @@ public interface Task<T> {
             }
 
             @Override
-            public Sender<T> sendAll(T[] messages) {
+            public Sender<T> sendAll(T... messages) {
                 for (T message : messages) deferred.send(Result.<T, E>success(message));
                 return this;
             }
@@ -177,6 +177,6 @@ public interface Task<T> {
 
         Sender<T> sendAll(Iterable<T> messages);
 
-        Sender<T> sendAll(T[] messages);
+        Sender<T> sendAll(T... messages);
     }
 }
