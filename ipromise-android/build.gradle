@@ -22,7 +22,7 @@ repositories {
 dependencies {
     compile project(':ipromise')
     provided 'android:android:4.3_r2'
-    optional 'com.android.support:support-v4:19.0.1'
+    optional 'android.support:compatibility-v4:19.0.1'
 }
 
 group = 'me.tatarka.ipromise'
